@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/network_device.dart';
 import '../services/device_scanner_service.dart';
+import '../services/device_fingerprint_service.dart';
 
 /// Lifecycle-aware provider for the "Who's on My Wi-Fi?" device scanner.
 /// Pauses scanning when app is backgrounded, resumes when foregrounded.
@@ -78,6 +79,9 @@ class DeviceScannerProvider with ChangeNotifier, WidgetsBindingObserver {
     _devices = [];
     notifyListeners();
 
+    // Start mDNS listener to catch device names broadcasting on the network
+    DeviceFingerprintService.startMdnsDiscovery();
+
     try {
       final stream = _scannerService.scanSubnet(
         onProgress: (p) {
@@ -98,17 +102,20 @@ class DeviceScannerProvider with ChangeNotifier, WidgetsBindingObserver {
         onDone: () {
           _isScanning = false;
           _progress = 100;
+          DeviceFingerprintService.stopMdnsDiscovery();
           notifyListeners();
         },
         onError: (error) {
           _errorMessage = 'Scan failed: $error';
           _isScanning = false;
+          DeviceFingerprintService.stopMdnsDiscovery();
           notifyListeners();
         },
       );
     } catch (e) {
       _errorMessage = 'Could not start scan. Make sure you are connected to Wi-Fi.';
       _isScanning = false;
+      DeviceFingerprintService.stopMdnsDiscovery();
       notifyListeners();
     }
   }
@@ -116,6 +123,7 @@ class DeviceScannerProvider with ChangeNotifier, WidgetsBindingObserver {
   void _cancelScan() {
     _scanSubscription?.cancel();
     _scanSubscription = null;
+    DeviceFingerprintService.stopMdnsDiscovery();
     if (_isScanning) {
       _isScanning = false;
       notifyListeners();
@@ -130,3 +138,4 @@ class DeviceScannerProvider with ChangeNotifier, WidgetsBindingObserver {
     super.dispose();
   }
 }
+

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:wifi_scan/wifi_scan.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../models/wifi_access_point.dart';
 
 /// Lifecycle-aware provider for the Wi-Fi Analyzer feature.
@@ -63,10 +64,28 @@ class WifiAnalyzerProvider with ChangeNotifier, WidgetsBindingObserver {
 
   Future<void> _performScan() async {
     try {
+      // Check location service status
+      final serviceStatus = await Permission.locationWhenInUse.serviceStatus;
+      if (!serviceStatus.isEnabled) {
+        _errorMessage = 'Location Services are disabled. Please turn on Location/GPS to scan Wi-Fi.';
+        _isScanning = false;
+        notifyListeners();
+        return;
+      }
+
+      // Request location permission
+      final locationStatus = await Permission.locationWhenInUse.request();
+      if (!locationStatus.isGranted) {
+        _errorMessage = 'Location permission is required to scan Wi-Fi networks.';
+        _isScanning = false;
+        notifyListeners();
+        return;
+      }
+
       // Check if we can start a scan
       final canScan = await WiFiScan.instance.canStartScan();
       if (canScan != CanStartScan.yes) {
-        _errorMessage = 'Cannot scan Wi-Fi. Please check permissions and enable Location Services.';
+        _errorMessage = 'Cannot scan Wi-Fi. Ensure Location is enabled (Status: $canScan).';
         _isScanning = false;
         notifyListeners();
         return;
