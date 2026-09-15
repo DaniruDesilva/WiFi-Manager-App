@@ -4,6 +4,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/services.dart';
 import 'providers/theme_provider.dart';
 import 'providers/history_provider.dart';
+import 'providers/device_scanner_provider.dart';
+import 'providers/wifi_analyzer_provider.dart';
+import 'providers/network_info_provider.dart';
 import 'screens/main_screen.dart';
 
 void main() {
@@ -13,6 +16,9 @@ void main() {
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => HistoryProvider()),
+        ChangeNotifierProvider(create: (_) => DeviceScannerProvider()),
+        ChangeNotifierProvider(create: (_) => WifiAnalyzerProvider()),
+        ChangeNotifierProvider(create: (_) => NetworkInfoProvider()),
       ],
       child: const WifiQrGeneratorApp(),
     ),

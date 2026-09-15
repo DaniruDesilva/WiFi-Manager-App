@@ -6,8 +6,8 @@ import '../providers/theme_provider.dart';
 import 'dashboard_screen.dart';
 import 'scan_screen.dart';
 import 'history_screen.dart';
-import 'speed_test_screen.dart';
 import 'generate_screen.dart';
+import 'tools_dashboard_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -49,7 +49,7 @@ class _MainScreenState extends State<MainScreen> {
       DashboardScreen(onTabSelected: _onTabSelected),
       const ScanScreen(),
       const HistoryScreen(),
-      const SpeedTestScreen(),
+      const ToolsDashboardScreen(),
     ];
 
     return Scaffold(
@@ -119,14 +119,14 @@ class _MainScreenState extends State<MainScreen> {
               label: 'Scan',
             ),
             NavigationDestination(
-              icon: Icon(FluentIcons.bookmark_24_regular),
-              selectedIcon: Icon(FluentIcons.bookmark_24_filled),
-              label: 'Saved',
+              icon: Icon(FluentIcons.lock_closed_24_regular),
+              selectedIcon: Icon(FluentIcons.lock_closed_24_filled),
+              label: 'Vault',
             ),
             NavigationDestination(
-              icon: Icon(FluentIcons.top_speed_24_regular),
-              selectedIcon: Icon(FluentIcons.top_speed_24_filled),
-              label: 'Speed',
+              icon: Icon(FluentIcons.toolbox_24_regular),
+              selectedIcon: Icon(FluentIcons.toolbox_24_filled),
+              label: 'Tools',
             ),
           ],
         ),
@@ -134,4 +134,3 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 }
-
