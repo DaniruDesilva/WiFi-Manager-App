@@ -1,0 +1,35 @@
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+rootProject.buildDir = '../build'
+subprojects {
+    project.buildDir = "${rootProject.buildDir}/${project.name}"
+}
+subprojects {
+    // Inject namespace for legacy plugins to fix AGP 8+ build errors and force compileSdk 37
+    afterEvaluate { project ->
+        if (project.hasProperty('android')) {
+            project.android {
+                if (namespace == null) {
+                    if (project.name == 'flutter_internet_speed_test') {
+                        namespace = 'com.shaz.plugin.fist.flutter_internet_speed_test'
+                    }
+                }
+                // Force all plugins to use SDK 37 to avoid SDK Manager hangs downloading old versions
+                compileSdkVersion 37
+            }
+        }
+    }
+}
+
+subprojects {
+    project.evaluationDependsOn(':app')
+}
+
+tasks.register("clean", Delete) {
+    delete rootProject.buildDir
+}
