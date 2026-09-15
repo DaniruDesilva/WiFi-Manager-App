@@ -6,4 +6,10 @@
             <solid android:color="#0F172A" />
         </shape>
     </item>
+    
+    <item>
+        <bitmap
+            android:gravity="center"
+            android:src="@mipmap/ic_launcher" />
+    </item>
 </layer-list>
