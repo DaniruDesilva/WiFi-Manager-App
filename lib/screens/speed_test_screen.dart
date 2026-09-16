@@ -81,12 +81,17 @@ class _SpeedTestScreenState extends State<SpeedTestScreen> with AutomaticKeepAli
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Speed Test'),
+        backgroundColor: Colors.transparent,
+      ),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
             // Animated Radar/Pulse Icon
             Stack(
               alignment: Alignment.center,
@@ -134,8 +139,8 @@ class _SpeedTestScreenState extends State<SpeedTestScreen> with AutomaticKeepAli
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _buildSpeedIndicator('Download', downloadRate, FluentIcons.arrow_download_24_filled, isTesting ? null : Colors.green),
-                _buildSpeedIndicator('Upload', uploadRate, FluentIcons.arrow_upload_24_filled, isTesting ? null : Colors.blue),
+                Expanded(child: _buildSpeedIndicator('Download', downloadRate, FluentIcons.arrow_download_24_filled, isTesting ? null : Colors.green)),
+                Expanded(child: _buildSpeedIndicator('Upload', uploadRate, FluentIcons.arrow_upload_24_filled, isTesting ? null : Colors.blue)),
               ],
             ).animate().fade(delay: 200.ms).slideY(begin: 0.2),
             
@@ -166,7 +171,7 @@ class _SpeedTestScreenState extends State<SpeedTestScreen> with AutomaticKeepAli
           ],
         ),
       ),
-    );
+    ));
   }
 
   Widget _buildSpeedIndicator(String label, double rate, IconData icon, Color? finalColor) {
@@ -182,9 +187,12 @@ class _SpeedTestScreenState extends State<SpeedTestScreen> with AutomaticKeepAli
           child: Icon(icon, size: 28, color: rate > 0 ? (finalColor ?? Theme.of(context).colorScheme.primary) : Colors.grey.shade400),
         ),
         const SizedBox(height: 16),
-        Text(
-          rate.toStringAsFixed(1),
-          style: const TextStyle(fontSize: 48, fontWeight: FontWeight.w900, height: 1.0),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            rate.toStringAsFixed(1),
+            style: const TextStyle(fontSize: 48, fontWeight: FontWeight.w900, height: 1.0),
+          ),
         ),
         const Text(
           'Mbps',

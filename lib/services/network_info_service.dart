@@ -34,6 +34,11 @@ class NetworkInfoService {
     return name;
   }
 
+  /// Returns the current Wi-Fi BSSID (MAC address).
+  Future<String?> getWifiBSSID() async {
+    return await _networkInfo.getWifiBSSID();
+  }
+
   /// Fetches the public (external) IP address via ipify.org.
   Future<String?> getPublicIp() async {
     try {

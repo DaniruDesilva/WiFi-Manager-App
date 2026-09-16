@@ -5,6 +5,7 @@ class NetworkDevice {
   final String ipAddress;
   final String? macAddress;
   final String? manufacturer;
+  final String? deviceName; // The specific host name (e.g., HONOR-X9c-Smart)
   String? customName;
   final DateTime discoveredAt;
 
@@ -12,6 +13,7 @@ class NetworkDevice {
     required this.ipAddress,
     this.macAddress,
     this.manufacturer,
+    this.deviceName,
     this.customName,
     DateTime? discoveredAt,
   }) : discoveredAt = discoveredAt ?? DateTime.now();
@@ -54,13 +56,14 @@ class NetworkDevice {
     return FluentIcons.device_eq_24_regular;
   }
 
-  /// Returns a display name: custom name > manufacturer > "Unknown Device"
-  String get displayName => customName ?? manufacturer ?? 'Unknown Device';
+  /// Returns a display name: custom name > device name > manufacturer > "Unknown Device"
+  String get displayName => customName ?? deviceName ?? manufacturer ?? 'Unknown Device';
 
   Map<String, dynamic> toJson() => {
     'ipAddress': ipAddress,
     'macAddress': macAddress,
     'manufacturer': manufacturer,
+    'deviceName': deviceName,
     'customName': customName,
     'discoveredAt': discoveredAt.toIso8601String(),
   };
@@ -70,6 +73,7 @@ class NetworkDevice {
       ipAddress: json['ipAddress'] ?? '',
       macAddress: json['macAddress'],
       manufacturer: json['manufacturer'],
+      deviceName: json['deviceName'],
       customName: json['customName'],
       discoveredAt: json['discoveredAt'] != null ? DateTime.parse(json['discoveredAt']) : null,
     );

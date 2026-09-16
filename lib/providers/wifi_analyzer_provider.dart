@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:wifi_scan/wifi_scan.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../models/wifi_access_point.dart';
+import '../services/network_info_service.dart';
 
 /// Lifecycle-aware provider for the Wi-Fi Analyzer feature.
 /// Scans nearby Wi-Fi access points for signal strength and channel analysis.
@@ -14,6 +15,7 @@ class WifiAnalyzerProvider with ChangeNotifier, WidgetsBindingObserver {
   bool _isSupported = true;
   String? _errorMessage;
   Timer? _scanTimer;
+  final NetworkInfoService _networkInfoService = NetworkInfoService();
 
   List<WifiAccessPointModel> get accessPoints => _accessPoints;
   WifiAccessPointModel? get connectedNetwork => _connectedNetwork;
@@ -57,6 +59,21 @@ class WifiAnalyzerProvider with ChangeNotifier, WidgetsBindingObserver {
     await _performScan();
 
     // Then scan every 5 seconds
+    _scanTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      _performScan();
+    });
+  }
+
+  /// Forces an immediate scan (for pull-to-refresh).
+  Future<void> forceScan() async {
+    if (!_isSupported) return;
+    _isScanning = true;
+    _errorMessage = null;
+    notifyListeners();
+    await _performScan();
+    
+    // Restart timer to avoid immediate double-scan
+    _scanTimer?.cancel();
     _scanTimer = Timer.periodic(const Duration(seconds: 5), (_) {
       _performScan();
     });
@@ -113,9 +130,28 @@ class WifiAnalyzerProvider with ChangeNotifier, WidgetsBindingObserver {
       // Sort by signal strength (strongest first)
       _accessPoints.sort((a, b) => b.rssi.compareTo(a.rssi));
 
-      // The strongest signal with a valid SSID is likely the connected network
+      // Accurately determine connected network
+      final connectedBssid = await _networkInfoService.getWifiBSSID();
+      final connectedSsid = await _networkInfoService.getWifiName();
+
+      _connectedNetwork = null;
       if (_accessPoints.isNotEmpty) {
-        _connectedNetwork = _accessPoints.first;
+        if (connectedBssid != null && connectedBssid.isNotEmpty) {
+          try {
+            _connectedNetwork = _accessPoints.firstWhere((ap) => ap.bssid.toLowerCase() == connectedBssid.toLowerCase());
+          } catch (_) {}
+        }
+        
+        if (_connectedNetwork == null && connectedSsid != null && connectedSsid.isNotEmpty) {
+           try {
+            _connectedNetwork = _accessPoints.firstWhere((ap) => ap.ssid == connectedSsid);
+          } catch (_) {}
+        }
+        
+        // Fallback to strongest if we still don't know, though less accurate.
+        if (_connectedNetwork == null) {
+          _connectedNetwork = _accessPoints.first;
+        }
       }
 
       notifyListeners();

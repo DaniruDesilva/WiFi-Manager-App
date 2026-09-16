@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:wifi_iot/wifi_iot.dart';
 import '../providers/wifi_analyzer_provider.dart';
 import '../models/wifi_access_point.dart';
 
@@ -40,6 +41,14 @@ class _WifiAnalyzerScreenState extends State<WifiAnalyzerScreen> with SingleTick
         title: const Text('Wi-Fi Analyzer', style: TextStyle(fontWeight: FontWeight.bold)),
         elevation: 0,
         backgroundColor: Colors.transparent,
+        actions: [
+          IconButton(
+            icon: const Icon(FluentIcons.arrow_clockwise_24_regular),
+            onPressed: () {
+              context.read<WifiAnalyzerProvider>().forceScan();
+            },
+          ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           indicatorSize: TabBarIndicatorSize.label,
@@ -90,80 +99,64 @@ class _WifiAnalyzerScreenState extends State<WifiAnalyzerScreen> with SingleTick
   Widget _buildSignalMeterTab(BuildContext context, WifiAnalyzerProvider analyzer) {
     final connected = analyzer.connectedNetwork;
 
-    if (connected == null && !analyzer.isScanning) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(FluentIcons.wifi_off_24_regular, size: 80, color: Colors.grey.withValues(alpha: 0.3)),
-            const SizedBox(height: 16),
-            const Text('No Wi-Fi detected', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            Text('Connect to a Wi-Fi network to analyze', style: TextStyle(color: Colors.grey.shade500)),
-            const SizedBox(height: 24),
-            if (analyzer.errorMessage != null)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32),
-                child: Text(
-                  analyzer.errorMessage!,
-                  style: const TextStyle(color: Colors.red, fontSize: 13),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-          ],
-        ),
-      );
-    }
-
     if (connected == null) {
-      return const Center(child: CircularProgressIndicator());
+      if (analyzer.isScanning) {
+        return _buildLoadingState();
+      }
+      return _buildEmptyState(context, analyzer);
     }
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        children: [
-          // Signal Gauge
-          _buildSignalGauge(context, connected).animate().fade().scale(),
-          const SizedBox(height: 32),
+    return RefreshIndicator(
+      onRefresh: () async {
+        await analyzer.forceScan();
+      },
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          children: [
+            // Signal Gauge
+            _buildSignalGauge(context, connected).animate().fade().scale(),
+            const SizedBox(height: 32),
 
-          // Connection Info Cards
-          Row(
-            children: [
-              _buildStatCard(context, 'Channel', '${connected.channel}', FluentIcons.channel_24_regular),
-              const SizedBox(width: 12),
-              _buildStatCard(context, 'Frequency', '${connected.frequency} MHz', FluentIcons.pulse_24_regular),
-            ],
-          ).animate().fade(delay: 200.ms).slideY(begin: 0.2),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              _buildStatCard(context, 'Band', connected.band, FluentIcons.cellular_data_1_24_regular),
-              const SizedBox(width: 12),
-              _buildStatCard(context, 'RSSI', '${connected.rssi} dBm', FluentIcons.cellular_data_1_24_regular),
-            ],
-          ).animate().fade(delay: 300.ms).slideY(begin: 0.2),
-          const SizedBox(height: 24),
-
-          // Nearby Networks List
-          if (analyzer.accessPoints.length > 1) ...[
+            // Connection Info Cards
             Row(
               children: [
-                Text(
-                  'Nearby Networks',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                ),
-                const Spacer(),
-                Text(
-                  '${analyzer.accessPoints.length} found',
-                  style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
-                ),
+                _buildStatCard(context, 'Channel', '${connected.channel}', FluentIcons.channel_24_regular),
+                const SizedBox(width: 12),
+                _buildStatCard(context, 'Frequency', '${connected.frequency} MHz', FluentIcons.pulse_24_regular),
               ],
-            ),
+            ).animate().fade(delay: 200.ms).slideY(begin: 0.2),
             const SizedBox(height: 12),
-            ...analyzer.accessPoints.take(10).map((ap) => _buildNetworkTile(context, ap, ap == connected)),
+            Row(
+              children: [
+                _buildStatCard(context, 'Band', connected.band, FluentIcons.cellular_data_1_24_regular),
+                const SizedBox(width: 12),
+                _buildStatCard(context, 'RSSI', '${connected.rssi} dBm', FluentIcons.cellular_data_1_24_regular),
+              ],
+            ).animate().fade(delay: 300.ms).slideY(begin: 0.2),
+            const SizedBox(height: 24),
+
+            // Nearby Networks List
+            if (analyzer.accessPoints.length > 1) ...[
+              Row(
+                children: [
+                  Text(
+                    'Nearby Networks',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  const Spacer(),
+                  Text(
+                    '${analyzer.accessPoints.length} found',
+                    style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              ...analyzer.accessPoints.map((ap) => _buildNetworkTile(context, ap, ap == connected)),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
@@ -260,76 +253,152 @@ class _WifiAnalyzerScreenState extends State<WifiAnalyzerScreen> with SingleTick
 
   Widget _buildNetworkTile(BuildContext context, WifiAccessPointModel ap, bool isConnected) {
     final color = _getSignalColor(ap.rssi);
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(16),
-        border: isConnected ? Border.all(color: Theme.of(context).colorScheme.primary, width: 2) : null,
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 6,
-            height: 36,
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(3),
+    return GestureDetector(
+      onTap: () => _showConnectDialog(context, ap),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(16),
+          border: isConnected ? Border.all(color: Theme.of(context).colorScheme.primary, width: 2) : null,
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 6,
+              height: 36,
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(3),
+              ),
             ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Flexible(
-                      child: Text(
-                        ap.ssid,
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                        overflow: TextOverflow.ellipsis,
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          ap.ssid,
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                    ),
-                    if (isConnected)
-                      Padding(
-                        padding: const EdgeInsets.only(left: 6),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            'Connected',
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.primary,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
+                      if (isConnected)
+                        Padding(
+                          padding: const EdgeInsets.only(left: 6),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              'Connected',
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.primary,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'Ch ${ap.channel} • ${ap.band} • ${ap.rssi} dBm',
-                  style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
-                ),
-              ],
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Ch ${ap.channel} • ${ap.band} • ${ap.rssi} dBm',
+                    style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
+                  ),
+                ],
+              ),
             ),
-          ),
-          // Mini signal bars
-          _buildMiniSignalBars(ap.signalPercent, color),
-        ],
+            // Action or Mini signal bars
+            if (!isConnected)
+              Icon(FluentIcons.plug_connected_24_regular, color: Theme.of(context).colorScheme.primary, size: 20)
+            else
+              _buildMiniSignalBars(ap.signalPercent, color),
+          ],
+        ),
       ),
     );
   }
 
+  void _showConnectDialog(BuildContext context, WifiAccessPointModel ap) {
+    final passwordController = TextEditingController();
+    bool isConnecting = false;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              title: Text('Connect to ${ap.ssid}'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (isConnecting)
+                    const CircularProgressIndicator()
+                  else
+                    TextField(
+                      controller: passwordController,
+                      decoration: const InputDecoration(
+                        labelText: 'Password',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(FluentIcons.password_24_regular),
+                      ),
+                      obscureText: true,
+                    ),
+                ],
+              ),
+              actions: [
+                if (!isConnecting)
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Cancel'),
+                  ),
+                if (!isConnecting)
+                  ElevatedButton(
+                    onPressed: () async {
+                      setState(() => isConnecting = true);
+                      final success = await WiFiForIoTPlugin.connect(
+                        ap.ssid,
+                        password: passwordController.text.isNotEmpty ? passwordController.text : null,
+                        security: passwordController.text.isNotEmpty ? NetworkSecurity.WPA : NetworkSecurity.NONE,
+                        joinOnce: false,
+                      );
+                      setState(() => isConnecting = false);
+
+                      if (context.mounted) {
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(success ? 'Connected successfully' : 'Failed to connect'),
+                            backgroundColor: success ? Colors.green : Colors.red,
+                          ),
+                        );
+                        if (success) {
+                          context.read<WifiAnalyzerProvider>().forceScan();
+                        }
+                      }
+                    },
+                    child: const Text('Connect'),
+                  ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   Widget _buildMiniSignalBars(double percent, Color color) {
-    final bars = 4;
+    const bars = 4;
     final filledBars = (percent / 25).ceil().clamp(0, 4);
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -351,16 +420,10 @@ class _WifiAnalyzerScreenState extends State<WifiAnalyzerScreen> with SingleTick
 
   Widget _buildChannelGraphTab(BuildContext context, WifiAnalyzerProvider analyzer) {
     if (analyzer.accessPoints.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const CircularProgressIndicator(),
-            const SizedBox(height: 16),
-            Text('Scanning for networks...', style: TextStyle(color: Colors.grey.shade500)),
-          ],
-        ),
-      );
+      if (analyzer.isScanning) {
+        return _buildLoadingState();
+      }
+      return _buildEmptyState(context, analyzer);
     }
 
     final bandAPs = analyzer.getByBand(_selectedBand);
@@ -496,31 +559,39 @@ class _WifiAnalyzerScreenState extends State<WifiAnalyzerScreen> with SingleTick
           rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
         ),
         borderData: FlBorderData(show: false),
-        lineBarsData: aps.asMap().entries.take(8).map((entry) {
+        lineBarsData: aps.asMap().entries.map((entry) {
           final index = entry.key;
           final ap = entry.value;
           final color = _getNetworkColor(index);
           final isConnected = ap == analyzer.connectedNetwork;
           final ch = ap.channel.toDouble();
           final width = _selectedBand == '2.4 GHz' ? 2.5 : 5.0;
+          
+          final peakRssi = ap.rssi.toDouble();
+          const baseRssi = -100.0;
+          
+          // Generate points for a smooth parabola (bell-like curve)
+          List<FlSpot> spots = [];
+          const numPoints = 15;
+          final a = (baseRssi - peakRssi) / (width * width);
+          
+          for (int i = 0; i <= numPoints; i++) {
+            final x = (ch - width) + (2 * width * (i / numPoints));
+            final y = a * (x - ch) * (x - ch) + peakRssi;
+            spots.add(FlSpot(x, y));
+          }
 
           return LineChartBarData(
-            spots: [
-              FlSpot(ch - width, -95),
-              FlSpot(ch - width * 0.6, ap.rssi * 0.8 + -95 * 0.2),
-              FlSpot(ch, ap.rssi.toDouble()),
-              FlSpot(ch + width * 0.6, ap.rssi * 0.8 + -95 * 0.2),
-              FlSpot(ch + width, -95),
-            ],
+            spots: spots,
             isCurved: true,
-            curveSmoothness: 0.4,
+            curveSmoothness: 0.2, // Smoother than before
             color: color,
             barWidth: isConnected ? 3 : 2,
             isStrokeCapRound: true,
             dotData: const FlDotData(show: false),
             belowBarData: BarAreaData(
               show: true,
-              color: color.withValues(alpha: 0.15),
+              color: color.withValues(alpha: 0.2), // Slightly more opaque
             ),
           );
         }).toList(),
@@ -548,5 +619,61 @@ class _WifiAnalyzerScreenState extends State<WifiAnalyzerScreen> with SingleTick
       Color(0xFF8B5CF6),
     ];
     return colors[index % colors.length];
+  }
+
+  Widget _buildLoadingState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const CircularProgressIndicator(),
+          const SizedBox(height: 16),
+          Text('Scanning for networks...', style: TextStyle(color: Colors.grey.shade500)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context, WifiAnalyzerProvider analyzer) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(FluentIcons.wifi_off_24_regular, size: 80, color: Colors.grey.withValues(alpha: 0.3)),
+            const SizedBox(height: 16),
+            const Text('No Wi-Fi detected', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Text(
+              analyzer.errorMessage != null ? 'Unable to scan networks' : 'Connect to a Wi-Fi network to analyze', 
+              style: TextStyle(color: Colors.grey.shade500)
+            ),
+            const SizedBox(height: 24),
+            if (analyzer.errorMessage != null)
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.red.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(FluentIcons.error_circle_24_regular, color: Colors.red),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        analyzer.errorMessage!,
+                        style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
   }
 }
