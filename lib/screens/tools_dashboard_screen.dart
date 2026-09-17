@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:ui';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
@@ -18,7 +19,7 @@ class ToolsDashboardScreen extends StatelessWidget {
     return Consumer<NetworkInfoProvider>(
       builder: (context, netInfo, child) {
         return SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
+          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -52,7 +53,7 @@ class ToolsDashboardScreen extends StatelessWidget {
                     child: _buildToolCard(
                       context,
                       icon: FluentIcons.people_team_24_filled,
-                      title: "Who's on\nMy Wi-Fi?",
+                      title: "Who's on My Wi-Fi?",
                       subtitle: 'Find connected devices',
                       color: const Color(0xFF7C3AED),
                       onTap: () => Navigator.push(
@@ -66,7 +67,7 @@ class ToolsDashboardScreen extends StatelessWidget {
                     child: _buildToolCard(
                       context,
                       icon: FluentIcons.cellular_data_1_24_filled,
-                      title: 'Wi-Fi\nAnalyzer',
+                      title: 'Wi-Fi Analyzer',
                       subtitle: 'Signal & channels',
                       color: const Color(0xFF059669),
                       onTap: () => Navigator.push(
@@ -91,7 +92,7 @@ class ToolsDashboardScreen extends StatelessWidget {
                     child: _buildCompactToolCard(
                       context,
                       icon: FluentIcons.globe_24_filled,
-                      title: 'Router\nAdmin',
+                      title: 'Router Admin',
                       color: const Color(0xFFDC2626),
                       onTap: () => Navigator.push(
                         context,
@@ -108,7 +109,7 @@ class ToolsDashboardScreen extends StatelessWidget {
                     child: _buildCompactToolCard(
                       context,
                       icon: FluentIcons.key_24_filled,
-                      title: 'Default\nPasswords',
+                      title: 'Default Passwords',
                       color: const Color(0xFFD97706),
                       onTap: () => Navigator.push(
                         context,
@@ -128,61 +129,72 @@ class ToolsDashboardScreen extends StatelessWidget {
   }
 
   Widget _buildHeroCard(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : const Color(0xFF0F172A);
+    final subtextColor = isDark ? Colors.white.withValues(alpha: 0.7) : const Color(0x990F172A);
+    final iconBgColor = isDark ? Colors.white.withValues(alpha: 0.2) : Theme.of(context).colorScheme.primary.withValues(alpha: 0.1);
+    final iconColor = isDark ? Colors.white : Theme.of(context).colorScheme.primary;
+    
     return GestureDetector(
       onTap: () => Navigator.push(
         context,
         MaterialPageRoute(builder: (_) => const SpeedTestScreen()),
       ),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(28),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Theme.of(context).colorScheme.primary,
-              Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
-            ],
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
-              blurRadius: 20,
-              spreadRadius: 2,
-              offset: const Offset(0, 8),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(28),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 16.0, sigmaY: 16.0),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(
+                color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.transparent,
+                width: isDark ? 1.5 : 0.0,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: isDark ? Colors.black.withValues(alpha: 0.2) : Colors.black.withValues(alpha: 0.06),
+                  blurRadius: isDark ? 24 : 16,
+                  spreadRadius: 0,
+                  offset: Offset(0, isDark ? 12 : 8),
+                ),
+              ],
             ),
-          ],
-        ),
-        child: Row(
+            child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
+                color: iconBgColor,
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: const Icon(FluentIcons.top_speed_24_filled, color: Colors.white, size: 32),
+              child: Icon(FluentIcons.top_speed_24_filled, color: iconColor, size: 32),
             ),
             const SizedBox(width: 20),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Internet Speed Test',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Internet Speed Test',
+                      style: TextStyle(
+                        color: textColor,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     'Test download & upload speeds',
                     style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.8),
+                      color: subtextColor,
                       fontSize: 14,
                     ),
                   ),
@@ -192,13 +204,15 @@ class ToolsDashboardScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
+                color: iconBgColor,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(FluentIcons.chevron_right_24_regular, color: Colors.white),
+              child: Icon(FluentIcons.chevron_right_24_regular, color: iconColor),
             ),
           ],
         ),
+      ),
+      ),
       ),
     );
   }
@@ -211,6 +225,8 @@ class ToolsDashboardScreen extends StatelessWidget {
     required Color color,
     required VoidCallback onTap,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -221,9 +237,10 @@ class ToolsDashboardScreen extends StatelessWidget {
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-              spreadRadius: 1,
+              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+              blurRadius: 16,
+              spreadRadius: 0,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
@@ -242,11 +259,15 @@ class ToolsDashboardScreen extends StatelessWidget {
             Text(
               title,
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, height: 1.2),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 4),
             Text(
               subtitle,
-              style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
+              style: TextStyle(color: isDark ? Colors.grey.shade400 : Colors.grey.shade600, fontSize: 11),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
@@ -261,19 +282,22 @@ class ToolsDashboardScreen extends StatelessWidget {
     required Color color,
     required VoidCallback onTap,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(20),
-        height: 120,
+        height: 100,
         decoration: BoxDecoration(
           color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-              spreadRadius: 1,
+              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+              blurRadius: 16,
+              spreadRadius: 0,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
@@ -292,6 +316,8 @@ class ToolsDashboardScreen extends StatelessWidget {
               child: Text(
                 title,
                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, height: 1.2),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
@@ -308,9 +334,10 @@ class ToolsDashboardScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            spreadRadius: 1,
+            color: Colors.black.withValues(alpha: Theme.of(context).brightness == Brightness.dark ? 0.2 : 0.04),
+            blurRadius: 16,
+            spreadRadius: 0,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -372,7 +399,7 @@ class ToolsDashboardScreen extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
-              onPressed: () => netInfo.refresh(),
+              onPressed: () => netInfo.refresh(isManual: true),
               icon: const Icon(FluentIcons.arrow_clockwise_24_regular, size: 18),
               label: const Text('Refresh', style: TextStyle(fontWeight: FontWeight.bold)),
               style: OutlinedButton.styleFrom(

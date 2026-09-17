@@ -44,8 +44,13 @@ class _WifiAnalyzerScreenState extends State<WifiAnalyzerScreen> with SingleTick
         actions: [
           IconButton(
             icon: const Icon(FluentIcons.arrow_clockwise_24_regular),
-            onPressed: () {
-              context.read<WifiAnalyzerProvider>().forceScan();
+            onPressed: () async {
+              final error = await context.read<WifiAnalyzerProvider>().forceScan();
+              if (error != null && context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(error), backgroundColor: Colors.orange),
+                );
+              }
             },
           ),
         ],
@@ -108,7 +113,12 @@ class _WifiAnalyzerScreenState extends State<WifiAnalyzerScreen> with SingleTick
 
     return RefreshIndicator(
       onRefresh: () async {
-        await analyzer.forceScan();
+        final error = await analyzer.forceScan();
+        if (error != null && context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(error), backgroundColor: Colors.orange),
+          );
+        }
       },
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
@@ -254,7 +264,7 @@ class _WifiAnalyzerScreenState extends State<WifiAnalyzerScreen> with SingleTick
   Widget _buildNetworkTile(BuildContext context, WifiAccessPointModel ap, bool isConnected) {
     final color = _getSignalColor(ap.rssi);
     return GestureDetector(
-      onTap: () => _showConnectDialog(context, ap),
+      onTap: () => _handleNetworkTap(context, ap),
       child: Container(
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.all(14),
@@ -325,6 +335,10 @@ class _WifiAnalyzerScreenState extends State<WifiAnalyzerScreen> with SingleTick
         ),
       ),
     );
+  }
+
+  void _handleNetworkTap(BuildContext context, WifiAccessPointModel ap) {
+    _showConnectDialog(context, ap);
   }
 
   void _showConnectDialog(BuildContext context, WifiAccessPointModel ap) {

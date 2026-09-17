@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../services/network_info_service.dart';
 
 /// Provider for the Network Information Dashboard.
@@ -28,29 +29,41 @@ class NetworkInfoProvider with ChangeNotifier {
   }
 
   /// Refreshes all network information.
-  Future<void> refresh() async {
+  /// If [isManual] is true, it will request location permissions if needed.
+  Future<void> refresh({bool isManual = false}) async {
     _isLoading = true;
     notifyListeners();
 
     try {
-      // Run all queries in parallel
-      final results = await Future.wait([
-        _service.getLocalIp(),
-        _service.getGatewayIp(),
-        _service.getSubnetMask(),
-        _service.getBroadcast(),
-        _service.getWifiName(),
+      // For Wi-Fi name (SSID), Android requires Location permission.
+      if (isManual) {
+        final status = await Permission.locationWhenInUse.status;
+        if (!status.isGranted) {
+          await Permission.locationWhenInUse.request();
+        }
+      }
+
+      // Fetch fast local info first
+      _localIp = await _service.getLocalIp();
+      _gatewayIp = await _service.getGatewayIp();
+      _subnetMask = await _service.getSubnetMask();
+      _broadcast = await _service.getBroadcast();
+      
+      String? name = await _service.getWifiName();
+      if (name == '<unknown ssid>') name = null;
+      _wifiName = name;
+      
+      // Update UI immediately for fast local addresses
+      notifyListeners();
+
+      // Fetch slower external info in parallel
+      final externalResults = await Future.wait([
         _service.getPublicIp(),
         _service.checkInternetConnectivity(),
       ]);
 
-      _localIp = results[0] as String?;
-      _gatewayIp = results[1] as String?;
-      _subnetMask = results[2] as String?;
-      _broadcast = results[3] as String?;
-      _wifiName = results[4] as String?;
-      _publicIp = results[5] as String?;
-      _isOnline = results[6] as bool;
+      _publicIp = externalResults[0] as String?;
+      _isOnline = externalResults[1] as bool;
     } catch (_) {
       // Keep whatever we have
     }

@@ -7,6 +7,7 @@ import 'providers/history_provider.dart';
 import 'providers/device_scanner_provider.dart';
 import 'providers/wifi_analyzer_provider.dart';
 import 'providers/network_info_provider.dart';
+import 'providers/security_provider.dart';
 import 'screens/main_screen.dart';
 
 void main() {
@@ -19,6 +20,7 @@ void main() {
         ChangeNotifierProvider(create: (_) => DeviceScannerProvider()),
         ChangeNotifierProvider(create: (_) => WifiAnalyzerProvider()),
         ChangeNotifierProvider(create: (_) => NetworkInfoProvider()),
+        ChangeNotifierProvider(create: (_) => SecurityProvider()),
       ],
       child: const WifiQrGeneratorApp(),
     ),
@@ -33,17 +35,18 @@ class WifiQrGeneratorApp extends StatelessWidget {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
         // --- Premium 60-30-10 Color Themes ---
-        // 60% Background, 30% Surfaces/Cards, 10% Accent (Electric Blue)
-        const Color electricBlue = Color(0xFF00D4FF);
+        // 60% Background, 30% Surfaces/Cards, 10% Accent (Tech Blue)
+        const Color techBlue = Color(0xFF007AFF); // Clean Apple-style System Blue
+        const Color accentCyan = Color(0xFF0EA5E9); // Secondary accent
 
         final lightTheme = ThemeData(
           brightness: Brightness.light,
-          primaryColor: electricBlue,
-          scaffoldBackgroundColor: const Color(0xFFF8FAFC), // 60% Light Background
+          primaryColor: techBlue,
+          scaffoldBackgroundColor: const Color(0xFFF2F2F7), // 60% Light Background
           cardColor: const Color(0xFFFFFFFF), // 30% Light Surface
           colorScheme: const ColorScheme.light(
-            primary: electricBlue, // 10% Accent
-            secondary: electricBlue,
+            primary: techBlue, 
+            secondary: accentCyan,
             surface: Color(0xFFFFFFFF),
             onSurface: Color(0xFF0F172A),
           ),
@@ -60,12 +63,12 @@ class WifiQrGeneratorApp extends StatelessWidget {
 
         final darkTheme = ThemeData(
           brightness: Brightness.dark,
-          primaryColor: electricBlue,
+          primaryColor: techBlue,
           scaffoldBackgroundColor: const Color(0xFF0F172A), // 60% Dark Background (Deep Navy)
           cardColor: const Color(0xFF1E293B), // 30% Dark Surface
           colorScheme: const ColorScheme.dark(
-            primary: electricBlue, // 10% Accent
-            secondary: electricBlue,
+            primary: techBlue, 
+            secondary: accentCyan,
             surface: Color(0xFF1E293B),
             onSurface: Color(0xFFF8FAFC),
           ),

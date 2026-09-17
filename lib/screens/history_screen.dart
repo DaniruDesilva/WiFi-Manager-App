@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:local_auth/local_auth.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
@@ -8,9 +7,10 @@ import 'package:file_picker/file_picker.dart';
 import 'package:share_plus/share_plus.dart';
 import 'dart:io';
 import '../providers/history_provider.dart';
-import '../models/wifi_network.dart';
+import '../providers/security_provider.dart';
 import '../services/backup_service.dart';
 import '../utils/network_detail_sheet.dart';
+import '../widgets/pin_dialog.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -20,53 +20,51 @@ class HistoryScreen extends StatefulWidget {
 }
 
 class _HistoryScreenState extends State<HistoryScreen> with AutomaticKeepAliveClientMixin {
-  static final LocalAuthentication _localAuth = LocalAuthentication();
-  // Session-level auth state — persists across tab switches thanks to AutomaticKeepAliveClientMixin
-  static bool _isAuthenticated = false;
-
   @override
   bool get wantKeepAlive => true; // Prevent widget from being disposed on tab switch
 
   @override
   void initState() {
     super.initState();
-    if (!_isAuthenticated) {
-      _authenticate();
+    // Attempt authentication after the first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _tryAuthenticate();
+    });
+  }
+
+  Future<void> _tryAuthenticate() async {
+    final security = context.read<SecurityProvider>();
+
+    if (security.isHistoryUnlocked) return;
+
+    final result = await security.authenticateForHistory();
+
+    switch (result) {
+      case 'unlocked':
+        // Auto-unlocked (no security on device and no custom PIN)
+        break;
+      case 'pin_required':
+        if (mounted) await _showPinUnlock();
+        break;
+      case 'device_auth_required':
+        await security.authenticateWithDeviceForHistory();
+        break;
     }
   }
 
-  Future<void> _authenticate() async {
-    try {
-      final bool canAuthenticateWithBiometrics = await _localAuth.canCheckBiometrics;
-      final bool canAuthenticate = canAuthenticateWithBiometrics || await _localAuth.isDeviceSupported();
-
-      if (!canAuthenticate) {
-        setState(() {
-          _isAuthenticated = true;
-        });
-        return;
-      }
-
-      final bool didAuthenticate = await _localAuth.authenticate(
-        localizedReason: 'Please authenticate to view your saved networks',
-        biometricOnly: false,
-      );
-
-      if (mounted) {
-        setState(() {
-          _isAuthenticated = didAuthenticate;
-        });
-      }
-    } on PlatformException catch (e) {
-      debugPrint('Auth error: $e');
-      // If auth is not available/configured, allow access
-      if (mounted) {
-        setState(() {
-          _isAuthenticated = true;
-        });
+  Future<void> _showPinUnlock() async {
+    final security = context.read<SecurityProvider>();
+    final pin = await PinDialog.show(context, title: 'Unlock History');
+    if (pin != null) {
+      final verified = security.verifyHistoryPin(pin);
+      if (!verified && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Incorrect PIN'), backgroundColor: Colors.redAccent),
+        );
       }
     }
   }
+
 
   String _searchQuery = '';
   String _selectedFilter = 'All';
@@ -75,7 +73,11 @@ class _HistoryScreenState extends State<HistoryScreen> with AutomaticKeepAliveCl
   Widget build(BuildContext context) {
     super.build(context); // Required by AutomaticKeepAliveClientMixin
 
-    if (!_isAuthenticated) {
+
+    return Consumer2<SecurityProvider, HistoryProvider>(
+      builder: (context, security, historyProvider, child) {
+
+    if (!security.isHistoryUnlocked) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -93,7 +95,7 @@ class _HistoryScreenState extends State<HistoryScreen> with AutomaticKeepAliveCl
             ),
             const SizedBox(height: 32),
             FilledButton.icon(
-              onPressed: _authenticate,
+              onPressed: _tryAuthenticate,
               icon: const Icon(FluentIcons.fingerprint_24_regular),
               label: const Text('Unlock History', style: TextStyle(fontWeight: FontWeight.bold)),
               style: FilledButton.styleFrom(
@@ -106,9 +108,8 @@ class _HistoryScreenState extends State<HistoryScreen> with AutomaticKeepAliveCl
       );
     }
 
-    return Consumer<HistoryProvider>(
-      builder: (context, historyProvider, child) {
-        final history = historyProvider.history;
+    final history = historyProvider.history;
+
 
         // Apply filters
         var filteredList = history.where((network) {
@@ -280,12 +281,24 @@ class _HistoryScreenState extends State<HistoryScreen> with AutomaticKeepAliveCl
                                 ),
                               );
                             },
-                            child: Card(
-                              elevation: 4,
-                              shadowColor: Colors.black.withValues(alpha: 0.05),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                              child: InkWell(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).cardColor,
                                 borderRadius: BorderRadius.circular(20),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: Theme.of(context).brightness == Brightness.dark ? 0.2 : 0.04),
+                                    blurRadius: 16,
+                                    spreadRadius: 0,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: Material(
+                                color: Colors.transparent,
+                                borderRadius: BorderRadius.circular(20),
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(20),
                                 onTap: () => showNetworkDetailsSheet(context, network),
                                 child: Padding(
                                   padding: const EdgeInsets.all(16.0),
@@ -325,6 +338,7 @@ class _HistoryScreenState extends State<HistoryScreen> with AutomaticKeepAliveCl
                               ),
                             ),
                           ),
+                        ),
                         ).animate().fade(delay: (index * 50).ms).slideX(begin: 0.1);
                       },
                     ),

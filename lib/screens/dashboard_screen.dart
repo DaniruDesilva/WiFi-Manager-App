@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:ui';
 import 'package:provider/provider.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -128,27 +129,34 @@ class DashboardScreen extends StatelessWidget {
   }
 
   Widget _buildHeroCard(BuildContext context, WifiNetwork network) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(32),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Theme.of(context).colorScheme.primary,
-            Theme.of(context).colorScheme.primary.withValues(alpha: 0.6),
-          ],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
-            blurRadius: 20,
-            spreadRadius: 2,
-            offset: const Offset(0, 10),
-          )
-        ],
-      ),
-      child: Column(
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : const Color(0xFF0F172A);
+    final subtextColor = isDark ? Colors.white.withValues(alpha: 0.7) : const Color(0x990F172A);
+    final iconBgColor = isDark ? Colors.white.withValues(alpha: 0.1) : Theme.of(context).colorScheme.primary.withValues(alpha: 0.1);
+    final iconColor = isDark ? Colors.white : Theme.of(context).colorScheme.primary;
+    
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(32),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 16.0, sigmaY: 16.0),
+        child: Container(
+          decoration: BoxDecoration(
+            color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
+            borderRadius: BorderRadius.circular(32),
+            border: Border.all(
+              color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.transparent,
+              width: isDark ? 1.5 : 0.0,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: isDark ? Colors.black.withValues(alpha: 0.2) : Colors.black.withValues(alpha: 0.06),
+                blurRadius: isDark ? 24 : 16,
+                spreadRadius: 0,
+                offset: Offset(0, isDark ? 12 : 8),
+              )
+            ],
+          ),
+          child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
@@ -161,21 +169,21 @@ class DashboardScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'YOUR WI-FI QR CODE',
-                        style: TextStyle(color: Color(0x990F172A), fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.2),
+                        style: TextStyle(color: subtextColor, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.2),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         network.ssid,
-                        style: const TextStyle(color: Color(0xFF0F172A), fontSize: 24, fontWeight: FontWeight.bold),
+                        style: TextStyle(color: textColor, fontSize: 24, fontWeight: FontWeight.bold),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 4),
                       Text(
                         network.securityType,
-                        style: const TextStyle(color: Color(0x990F172A), fontSize: 14),
+                        style: TextStyle(color: subtextColor, fontSize: 14),
                       ),
                     ],
                   ),
@@ -183,10 +191,10 @@ class DashboardScreen extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF0F172A).withValues(alpha: 0.1),
+                    color: iconBgColor,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(FluentIcons.wifi_1_24_filled, color: Color(0xFF0F172A)),
+                  child: Icon(FluentIcons.wifi_1_24_filled, color: iconColor),
                 ),
               ],
             ),
@@ -194,27 +202,30 @@ class DashboardScreen extends StatelessWidget {
           
           Center(
             child: Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(8), // Reduced padding so QR code looks bigger
               margin: const EdgeInsets.symmetric(horizontal: 24),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10, offset: const Offset(0, 4))
+                ]
               ),
               child: QrImageView(
                 data: network.qrData,
                 version: QrVersions.auto,
-                size: 140.0,
+                size: 180.0, // Increased size
                 backgroundColor: Colors.white,
                 dataModuleStyle: QrDataModuleStyle(
                   dataModuleShape: network.isSquareDots ? QrDataModuleShape.square : QrDataModuleShape.circle,
-                  color: network.qrColorHex != null ? Color(int.parse(network.qrColorHex!, radix: 16)) : Colors.black,
+                  color: network.qrColorHex != null ? Color(int.parse(network.qrColorHex!, radix: 16)) : const Color(0xFF0F172A),
                 ),
                 eyeStyle: QrEyeStyle(
                   eyeShape: network.isSquareEyes ? QrEyeShape.square : QrEyeShape.circle,
-                  color: network.qrColorHex != null ? Color(int.parse(network.qrColorHex!, radix: 16)) : Colors.black,
+                  color: network.qrColorHex != null ? Color(int.parse(network.qrColorHex!, radix: 16)) : const Color(0xFF0F172A),
                 ),
                 embeddedImage: MemoryImage(base64Decode(AppConstants.wifiLogoBase64)),
-                embeddedImageStyle: const QrEmbeddedImageStyle(size: Size(24, 24)),
+                embeddedImageStyle: const QrEmbeddedImageStyle(size: Size(32, 32)),
               ),
             ),
           ),
@@ -223,14 +234,21 @@ class DashboardScreen extends StatelessWidget {
             padding: const EdgeInsets.all(24.0),
             child: Row(
               children: [
-                const Icon(FluentIcons.shield_checkmark_24_filled, color: Color(0xFF0F172A)),
-                const SizedBox(width: 12),
-                const Expanded(
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: iconBgColor,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(FluentIcons.shield_checkmark_24_filled, color: iconColor, size: 20),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Network secured', style: TextStyle(color: Color(0xFF0F172A), fontWeight: FontWeight.bold)),
-                      Text('Guests can connect in seconds.', style: TextStyle(color: Color(0x990F172A), fontSize: 12)),
+                      Text('Network secured', style: TextStyle(color: textColor, fontWeight: FontWeight.bold)),
+                      Text('Guests can connect in seconds.', style: TextStyle(color: subtextColor, fontSize: 12)),
                     ],
                   ),
                 ),
@@ -239,49 +257,58 @@ class DashboardScreen extends StatelessWidget {
           )
         ],
       ),
+    ),
+      ),
     );
   }
   
   Widget _buildEmptyHeroCard(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(32),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(32),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Theme.of(context).colorScheme.primary,
-            Theme.of(context).colorScheme.primary.withValues(alpha: 0.6),
-          ],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
-            blurRadius: 20,
-            spreadRadius: 2,
-            offset: const Offset(0, 10),
-          )
-        ],
-      ),
-      child: Column(
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : const Color(0xFF0F172A);
+    final subtextColor = isDark ? Colors.white.withValues(alpha: 0.7) : const Color(0x990F172A);
+    final iconBgColor = isDark ? Colors.white.withValues(alpha: 0.1) : Theme.of(context).colorScheme.primary.withValues(alpha: 0.1);
+    final iconColor = isDark ? Colors.white : Theme.of(context).colorScheme.primary;
+    
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(32),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 16.0, sigmaY: 16.0),
+        child: Container(
+          padding: const EdgeInsets.all(32),
+          decoration: BoxDecoration(
+            color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
+            borderRadius: BorderRadius.circular(32),
+            border: Border.all(
+              color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.transparent,
+              width: isDark ? 1.5 : 0.0,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: isDark ? Colors.black.withValues(alpha: 0.2) : Colors.black.withValues(alpha: 0.06),
+                blurRadius: isDark ? 24 : 16,
+                spreadRadius: 0,
+                offset: Offset(0, isDark ? 12 : 8),
+              )
+            ],
+          ),
+          child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
             padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(color: const Color(0xFF0F172A).withValues(alpha: 0.1), shape: BoxShape.circle),
-            child: const Icon(FluentIcons.qr_code_24_regular, size: 64, color: Color(0xFF0F172A)),
+            decoration: BoxDecoration(color: iconBgColor, shape: BoxShape.circle),
+            child: Icon(FluentIcons.qr_code_24_regular, size: 64, color: iconColor),
           ),
           const SizedBox(height: 24),
-          const Text(
+          Text(
             'Create your first QR',
-            style: TextStyle(color: Color(0xFF0F172A), fontSize: 24, fontWeight: FontWeight.bold),
+            style: TextStyle(color: textColor, fontSize: 24, fontWeight: FontWeight.bold),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Get started by adding your home or guest Wi-Fi network.',
-            style: TextStyle(color: Color(0x990F172A), fontSize: 14),
+            style: TextStyle(color: subtextColor, fontSize: 14),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
@@ -293,14 +320,17 @@ class DashboardScreen extends StatelessWidget {
               );
             },
             style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFF0F172A),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              backgroundColor: isDark ? Colors.white : Theme.of(context).colorScheme.primary,
+              foregroundColor: isDark ? Theme.of(context).colorScheme.primary : Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             ),
-            icon: const Icon(FluentIcons.add_24_regular),
+            icon: const Icon(FluentIcons.add_24_filled),
             label: const Text('Create WiFi QR', style: TextStyle(fontWeight: FontWeight.bold)),
           )
         ],
+      ),
+    ),
       ),
     );
   }

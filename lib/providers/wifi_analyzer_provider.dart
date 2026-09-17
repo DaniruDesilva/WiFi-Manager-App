@@ -28,9 +28,14 @@ class WifiAnalyzerProvider with ChangeNotifier, WidgetsBindingObserver {
     return _accessPoints.where((ap) => ap.band == band).toList();
   }
 
+  StreamSubscription? _resultsSubscription;
+
   WifiAnalyzerProvider() {
     WidgetsBinding.instance.addObserver(this);
     _checkPlatformSupport();
+    _resultsSubscription = WiFiScan.instance.onScannedResultsAvailable.listen((_) {
+      _fetchResults();
+    });
   }
 
   void _checkPlatformSupport() {
@@ -51,42 +56,49 @@ class WifiAnalyzerProvider with ChangeNotifier, WidgetsBindingObserver {
   Future<void> startScanning() async {
     if (!_isSupported || _isScanning) return;
 
-    _isScanning = true;
-    _errorMessage = null;
-    notifyListeners();
-
     // Run initial scan immediately
     await _performScan();
 
-    // Then scan every 5 seconds
-    _scanTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+    // Then scan every 30 seconds to avoid Android throttling (max 4 per 2 mins)
+    _scanTimer = Timer.periodic(const Duration(seconds: 30), (_) {
       _performScan();
     });
   }
 
   /// Forces an immediate scan (for pull-to-refresh).
-  Future<void> forceScan() async {
-    if (!_isSupported) return;
-    _isScanning = true;
-    _errorMessage = null;
-    notifyListeners();
+  /// Returns an error message if the scan is throttled, null otherwise.
+  Future<String?> forceScan() async {
+    if (!_isSupported) return null;
+
+    final canScan = await WiFiScan.instance.canStartScan();
+    if (canScan == CanStartScan.failed) {
+      return 'Android restricts Wi-Fi scans to 4 per 2 minutes. Please wait a moment.';
+    }
+
     await _performScan();
+    // Wait for a bit so the RefreshIndicator spins, and the scan actually completes
+    await Future.delayed(const Duration(seconds: 2));
+    await _fetchResults();
     
     // Restart timer to avoid immediate double-scan
     _scanTimer?.cancel();
-    _scanTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+    _scanTimer = Timer.periodic(const Duration(seconds: 30), (_) {
       _performScan();
     });
+    
+    return null;
   }
 
   Future<void> _performScan() async {
     try {
+      _isScanning = true;
+      _errorMessage = null;
+      notifyListeners();
+
       // Check location service status
       final serviceStatus = await Permission.locationWhenInUse.serviceStatus;
       if (!serviceStatus.isEnabled) {
         _errorMessage = 'Location Services are disabled. Please turn on Location/GPS to scan Wi-Fi.';
-        _isScanning = false;
-        notifyListeners();
         return;
       }
 
@@ -94,23 +106,33 @@ class WifiAnalyzerProvider with ChangeNotifier, WidgetsBindingObserver {
       final locationStatus = await Permission.locationWhenInUse.request();
       if (!locationStatus.isGranted) {
         _errorMessage = 'Location permission is required to scan Wi-Fi networks.';
-        _isScanning = false;
-        notifyListeners();
         return;
       }
 
       // Check if we can start a scan
       final canScan = await WiFiScan.instance.canStartScan();
       if (canScan != CanStartScan.yes) {
-        _errorMessage = 'Cannot scan Wi-Fi. Ensure Location is enabled (Status: $canScan).';
-        _isScanning = false;
-        notifyListeners();
+        if (canScan == CanStartScan.failed) {
+          _errorMessage = 'Scan throttled by Android. Please wait a moment.';
+        } else {
+          _errorMessage = 'Cannot scan Wi-Fi. (Status: ${canScan.name}).';
+        }
         return;
       }
 
       await WiFiScan.instance.startScan();
+      // Notice: we do not immediately fetch results here anymore.
+      // We rely on the stream _resultsSubscription or forceScan delay.
+    } catch (e) {
+      _errorMessage = 'Scan error: $e';
+    } finally {
+      _isScanning = false;
+      notifyListeners();
+    }
+  }
 
-      // Get scan results
+  Future<void> _fetchResults() async {
+    try {
       final canGetResults = await WiFiScan.instance.canGetScannedResults();
       if (canGetResults != CanGetScannedResults.yes) {
         return;
@@ -153,10 +175,9 @@ class WifiAnalyzerProvider with ChangeNotifier, WidgetsBindingObserver {
           _connectedNetwork = _accessPoints.first;
         }
       }
-
       notifyListeners();
     } catch (e) {
-      _errorMessage = 'Scan error: $e';
+      _errorMessage = 'Failed to fetch results: $e';
       notifyListeners();
     }
   }
