@@ -120,7 +120,6 @@ void showNetworkDetailsSheet(BuildContext context, WifiNetwork network) {
                       eyeShape: network.isSquareEyes ? QrEyeShape.square : QrEyeShape.circle,
                       color: network.qrColorHex != null ? Color(int.parse(network.qrColorHex!, radix: 16)) : Colors.black,
                     ),
-                    embeddedImage: MemoryImage(base64Decode(AppConstants.wifiLogoBase64)),
                     embeddedImageStyle: const QrEmbeddedImageStyle(size: Size(36, 36)),
                   ),
                 ),

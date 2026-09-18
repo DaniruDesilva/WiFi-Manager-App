@@ -386,7 +386,7 @@ class _HistoryScreenState extends State<HistoryScreen> with AutomaticKeepAliveCl
               try {
                 final path = await BackupService.createBackupFile(historyProvider.history, passwordController.text);
                 // ignore: deprecated_member_use
-                await Share.shareXFiles([XFile(path)], text: 'Wi-Fi QR Generator Backup');
+                await Share.shareXFiles([XFile(path)], text: 'NetVault Backup');
               } catch (e) {
                 if (!context.mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Backup failed: $e')));

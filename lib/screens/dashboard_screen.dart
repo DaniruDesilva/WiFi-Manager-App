@@ -224,7 +224,6 @@ class DashboardScreen extends StatelessWidget {
                   eyeShape: network.isSquareEyes ? QrEyeShape.square : QrEyeShape.circle,
                   color: network.qrColorHex != null ? Color(int.parse(network.qrColorHex!, radix: 16)) : const Color(0xFF0F172A),
                 ),
-                embeddedImage: MemoryImage(base64Decode(AppConstants.wifiLogoBase64)),
                 embeddedImageStyle: const QrEmbeddedImageStyle(size: Size(32, 32)),
               ),
             ),

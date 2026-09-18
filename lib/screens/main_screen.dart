@@ -90,7 +90,7 @@ class _MainScreenState extends State<MainScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Wi-Fi QR Generator', style: TextStyle(fontWeight: FontWeight.w600)),
+        title: const Text('NetVault', style: TextStyle(fontWeight: FontWeight.w600)),
         actions: [
           IconButton(
             icon: const Icon(FluentIcons.shield_24_regular),

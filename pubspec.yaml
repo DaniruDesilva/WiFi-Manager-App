@@ -1,5 +1,5 @@
 name: wifi_qr_generator
-description: "A new Flutter project."
+description: "NetVault: WiFi Manager & QR - Share Wi-Fi instantly and securely manage networks."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -123,10 +123,10 @@ flutter_launcher_icons:
   image_path: "assets/icon.png"
 
 flutter_native_splash:
-  color: "#F2F2F7"
+  color: "#001B8C"
   color_dark: "#0F172A"
-  image: "assets/icon.png"
+  image: "assets/splash_icon.png"
   android_12:
-    image: "assets/icon.png"
-    icon_background_color: "#F2F2F7"
+    image: "assets/splash_icon.png"
+    icon_background_color: "#001B8C"
     icon_background_color_dark: "#0F172A"

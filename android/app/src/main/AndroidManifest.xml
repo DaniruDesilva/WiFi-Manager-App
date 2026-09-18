@@ -18,7 +18,7 @@
     <uses-feature android:name="android.hardware.nfc" android:required="false" />
     
     <application
-        android:label="Wi-Fi QR Generator"
+        android:label="NetVault: WiFi Manager &amp; QR"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true">

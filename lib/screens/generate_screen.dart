@@ -618,7 +618,6 @@ class _GenerateScreenState extends State<GenerateScreen> {
                                   eyeShape: _generatedNetwork!.isSquareEyes ? QrEyeShape.square : QrEyeShape.circle,
                                   color: _generatedNetwork!.qrColorHex != null ? Color(int.parse(_generatedNetwork!.qrColorHex!, radix: 16)) : Colors.black,
                                 ),
-                                embeddedImage: MemoryImage(base64Decode(AppConstants.wifiLogoBase64)),
                                 embeddedImageStyle: const QrEmbeddedImageStyle(size: Size(32, 32)),
                               ),
                             ),

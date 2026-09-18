@@ -84,7 +84,7 @@ class WifiQrGeneratorApp extends StatelessWidget {
         );
 
         return MaterialApp(
-          title: 'Guest Wi-Fi QR Generator',
+          title: 'NetVault',
           theme: lightTheme,
           darkTheme: darkTheme,
           themeMode: themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
