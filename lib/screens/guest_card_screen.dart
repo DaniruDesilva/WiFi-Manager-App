@@ -7,6 +7,12 @@ import 'package:screenshot/screenshot.dart';
 import 'package:share_plus/share_plus.dart';
 import 'dart:convert';
 import 'dart:typed_data';
+import 'dart:io';
+import 'package:gal/gal.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 import '../models/wifi_network.dart';
 import '../utils/constants.dart';
 import '../utils/pdf_generator.dart';
@@ -58,30 +64,30 @@ class _GuestCardScreenState extends State<GuestCardScreen> {
             const Text('Export Options', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             const SizedBox(height: 24),
             ListTile(
-              leading: const Icon(FluentIcons.image_24_regular),
+              leading: const Icon(FluentIcons.save_24_regular),
+              title: const Text('Save to Gallery'),
+              subtitle: const Text('Save the card image to your device'),
+              onTap: () {
+                Navigator.pop(context);
+                _executeSaveImage();
+              },
+            ),
+            ListTile(
+              leading: const Icon(FluentIcons.share_24_regular),
               title: const Text('Share Image'),
-              subtitle: const Text('Share as a PNG image for messaging'),
+              subtitle: const Text('Share the card as a PNG image'),
               onTap: () {
                 Navigator.pop(context);
                 _executeShareImage();
               },
             ),
             ListTile(
-              leading: const Icon(FluentIcons.document_pdf_24_regular),
-              title: const Text('Print Poster (A4)'),
-              subtitle: const Text('Print a full-page Wi-Fi poster'),
+              leading: const Icon(FluentIcons.print_24_regular),
+              title: const Text('Print Card'),
+              subtitle: const Text('Print the exact card design'),
               onTap: () {
                 Navigator.pop(context);
-                PdfGenerator.printWifiPoster(widget.network!);
-              },
-            ),
-            ListTile(
-              leading: const Icon(FluentIcons.table_24_regular),
-              title: const Text('Print Table Tent (Foldable)'),
-              subtitle: const Text('Print a 2-sided foldable card for tables'),
-              onTap: () {
-                Navigator.pop(context);
-                PdfGenerator.printTableTent(widget.network!);
+                _executePrintCard();
               },
             ),
             const SizedBox(height: 16),
@@ -91,18 +97,122 @@ class _GuestCardScreenState extends State<GuestCardScreen> {
     );
   }
 
+  Future<void> _executeSaveImage() async {
+    setState(() => _isExporting = true);
+    await Future.delayed(const Duration(milliseconds: 100));
+    try {
+      final Uint8List image = await _screenshotController.captureFromWidget(
+        Material(
+          color: Colors.transparent,
+          child: _buildSelectedTemplate(widget.network!, isForExport: true),
+        ),
+        delay: const Duration(milliseconds: 50),
+        pixelRatio: 3.0,
+        context: context,
+      );
+      if (image.isNotEmpty) {
+        final directory = await getTemporaryDirectory();
+        final path = '${directory.path}/guest_wifi_card.png';
+        final file = File(path);
+        await file.writeAsBytes(image);
+        await Gal.putImage(path);
+        if (mounted) {
+          showDialog(
+            context: context,
+            barrierColor: Colors.transparent,
+            builder: (ctx) {
+              Future.delayed(const Duration(milliseconds: 1500), () {
+                if (ctx.mounted) Navigator.of(ctx).pop();
+              });
+              return Dialog(
+                backgroundColor: Colors.black87,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(FluentIcons.checkmark_circle_24_regular, color: Colors.greenAccent),
+                      const SizedBox(width: 12),
+                      const Text('Saved to Gallery', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                ),
+              );
+            },
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to save: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isExporting = false);
+    }
+  }
+
+  Future<void> _executePrintCard() async {
+    setState(() => _isExporting = true);
+    await Future.delayed(const Duration(milliseconds: 100));
+    try {
+      final Uint8List imageBytes = await _screenshotController.captureFromWidget(
+        Material(
+          color: Colors.transparent,
+          child: _buildSelectedTemplate(widget.network!, isForExport: true),
+        ),
+        delay: const Duration(milliseconds: 50),
+        pixelRatio: 3.0,
+        context: context,
+      );
+      if (imageBytes.isNotEmpty) {
+        await Printing.layoutPdf(
+          onLayout: (PdfPageFormat format) async {
+            final doc = pw.Document();
+            final image = pw.MemoryImage(imageBytes);
+            doc.addPage(
+              pw.Page(
+                pageFormat: format,
+                margin: pw.EdgeInsets.zero,
+                build: (pw.Context context) {
+                  return pw.Center(
+                    child: pw.Image(image, fit: pw.BoxFit.cover),
+                  );
+                },
+              ),
+            );
+            return doc.save();
+          },
+          name: 'Guest_WiFi_Card',
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to print: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isExporting = false);
+    }
+  }
+
   Future<void> _executeShareImage() async {
     setState(() => _isExporting = true);
     
     await Future.delayed(const Duration(milliseconds: 100));
     
     try {
-      final Uint8List? image = await _screenshotController.capture(
-        delay: const Duration(milliseconds: 10),
+      final Uint8List image = await _screenshotController.captureFromWidget(
+        Material(
+          color: Colors.transparent,
+          child: _buildSelectedTemplate(widget.network!, isForExport: true),
+        ),
+        delay: const Duration(milliseconds: 50),
         pixelRatio: 3.0,
+        context: context,
       );
       
-      if (image != null) {
+      if (image.isNotEmpty) {
         final xfile = XFile.fromData(image, mimeType: 'image/png', name: 'guest_wifi_card.png');
         await Share.shareXFiles([xfile], text: 'Here is the Wi-Fi connection card!');
       }
@@ -256,22 +366,22 @@ class _GuestCardScreenState extends State<GuestCardScreen> {
     );
   }
 
-  Widget _buildSelectedTemplate(WifiNetwork network) {
-    return _getTemplateByIndex(_selectedTemplateIndex, network);
+  Widget _buildSelectedTemplate(WifiNetwork network, {bool isForExport = false}) {
+    return _getTemplateByIndex(_selectedTemplateIndex, network, isForExport: isForExport);
   }
 
-  Widget _getTemplateByIndex(int index, WifiNetwork network) {
+  Widget _getTemplateByIndex(int index, WifiNetwork network, {bool isForExport = false}) {
     switch (index) {
-      case 0: return _buildModernGradientTemplate(network);
-      case 1: return _buildCleanMinimalTemplate(network);
-      case 2: return _buildDarkPremiumTemplate(network);
-      case 3: return _buildBoldTypographicTemplate(network);
-      case 4: return _buildCafeTemplate(network);
-      case 5: return _buildRestaurantTemplate(network);
-      case 6: return _buildTravelTemplate(network);
-      case 7: return _buildSchoolTemplate(network);
-      case 8: return _buildVehicleTemplate(network);
-      case 9: return _buildEventTemplate(network);
+      case 0: return _buildModernGradientTemplate(network, isForExport: isForExport);
+      case 1: return _buildCleanMinimalTemplate(network, isForExport: isForExport);
+      case 2: return _buildDarkPremiumTemplate(network, isForExport: isForExport);
+      case 3: return _buildBoldTypographicTemplate(network, isForExport: isForExport);
+      case 4: return _buildCafeTemplate(network, isForExport: isForExport);
+      case 5: return _buildRestaurantTemplate(network, isForExport: isForExport);
+      case 6: return _buildTravelTemplate(network, isForExport: isForExport);
+      case 7: return _buildSchoolTemplate(network, isForExport: isForExport);
+      case 8: return _buildVehicleTemplate(network, isForExport: isForExport);
+      case 9: return _buildEventTemplate(network, isForExport: isForExport);
       default: return _buildModernGradientTemplate(network);
     }
   }
@@ -343,12 +453,12 @@ class _GuestCardScreenState extends State<GuestCardScreen> {
 
   // ───────────────────────── TEMPLATE 1: Tech Modern ─────────────────────────
 
-  Widget _buildModernGradientTemplate(WifiNetwork network) {
+  Widget _buildModernGradientTemplate(WifiNetwork network, {bool isForExport = false}) {
     return Container(
       width: 300,
-      height: 450,
+      height: isForExport ? 424.2 : 450,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: isForExport ? BorderRadius.zero : BorderRadius.circular(24),
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -399,7 +509,7 @@ class _GuestCardScreenState extends State<GuestCardScreen> {
                 // Glassmorphism Card for QR & Details
                 Expanded(
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(24),
+                    borderRadius: isForExport ? BorderRadius.zero : BorderRadius.circular(24),
                     child: BackdropFilter(
                       filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                       child: Container(
@@ -407,7 +517,7 @@ class _GuestCardScreenState extends State<GuestCardScreen> {
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(24),
+                          borderRadius: isForExport ? BorderRadius.zero : BorderRadius.circular(24),
                           border: Border.all(color: Colors.white.withValues(alpha: 0.2), width: 1.5),
                         ),
                         child: Column(
@@ -417,7 +527,7 @@ class _GuestCardScreenState extends State<GuestCardScreen> {
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
                                 color: Colors.white,
-                                borderRadius: BorderRadius.circular(20),
+                                borderRadius: isForExport ? BorderRadius.zero : BorderRadius.circular(20),
                                 boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 10)],
                               ),
                               child: QrImageView(
@@ -445,7 +555,7 @@ class _GuestCardScreenState extends State<GuestCardScreen> {
                                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                                 decoration: BoxDecoration(
                                   color: Colors.white.withValues(alpha: 0.2),
-                                  borderRadius: BorderRadius.circular(12),
+                                  borderRadius: isForExport ? BorderRadius.zero : BorderRadius.circular(12),
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
@@ -480,13 +590,13 @@ class _GuestCardScreenState extends State<GuestCardScreen> {
 
   // ───────────────────────── TEMPLATE 2: Pure Minimalist ─────────────────────────
 
-  Widget _buildCleanMinimalTemplate(WifiNetwork network) {
+  Widget _buildCleanMinimalTemplate(WifiNetwork network, {bool isForExport = false}) {
     return Container(
       width: 300,
-      height: 450,
+      height: isForExport ? 424.2 : 450,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: isForExport ? BorderRadius.zero : BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 20, spreadRadius: 0)
         ],
@@ -564,12 +674,12 @@ class _GuestCardScreenState extends State<GuestCardScreen> {
 
   // ───────────────────────── TEMPLATE 3: Stealth Premium ─────────────────────────
 
-  Widget _buildDarkPremiumTemplate(WifiNetwork network) {
+  Widget _buildDarkPremiumTemplate(WifiNetwork network, {bool isForExport = false}) {
     return Container(
       width: 300,
-      height: 450,
+      height: isForExport ? 424.2 : 450,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: isForExport ? BorderRadius.zero : BorderRadius.circular(24),
         color: const Color(0xFF0F172A), // Deep Slate/Matte Black
         border: Border.all(color: Colors.blueAccent.withValues(alpha: 0.3), width: 1),
         boxShadow: [
@@ -628,7 +738,7 @@ class _GuestCardScreenState extends State<GuestCardScreen> {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: isForExport ? BorderRadius.zero : BorderRadius.circular(16),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -653,13 +763,13 @@ class _GuestCardScreenState extends State<GuestCardScreen> {
 
   // ───────────────────────── TEMPLATE 4: Boutique Hotel ─────────────────────────
 
-  Widget _buildBoldTypographicTemplate(WifiNetwork network) {
+  Widget _buildBoldTypographicTemplate(WifiNetwork network, {bool isForExport = false}) {
     return Container(
       width: 300,
-      height: 450,
+      height: isForExport ? 424.2 : 450,
       decoration: BoxDecoration(
         color: const Color(0xFFF7F5F0), // Beautiful warm off-white (cream)
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: isForExport ? BorderRadius.zero : BorderRadius.circular(24),
       ),
       child: Padding(
         padding: const EdgeInsets.all(24.0),
@@ -745,13 +855,13 @@ class _GuestCardScreenState extends State<GuestCardScreen> {
   }
   // ───────────────────────── TEMPLATE 5: Cafe / Coffee Shop ─────────────────────────
 
-  Widget _buildCafeTemplate(WifiNetwork network) {
+  Widget _buildCafeTemplate(WifiNetwork network, {bool isForExport = false}) {
     return Container(
       width: 300,
-      height: 450,
+      height: isForExport ? 424.2 : 450,
       decoration: BoxDecoration(
         color: const Color(0xFFF4EBE1), // Latte Cream
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: isForExport ? BorderRadius.zero : BorderRadius.circular(24),
       ),
       child: Stack(
         children: [
@@ -782,7 +892,7 @@ class _GuestCardScreenState extends State<GuestCardScreen> {
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(24),
+                    borderRadius: isForExport ? BorderRadius.zero : BorderRadius.circular(24),
                     boxShadow: [BoxShadow(color: const Color(0xFF8D6E63).withValues(alpha: 0.1), blurRadius: 15)],
                   ),
                   child: QrImageView(
@@ -802,7 +912,7 @@ class _GuestCardScreenState extends State<GuestCardScreen> {
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: const Color(0xFF8D6E63).withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: isForExport ? BorderRadius.zero : BorderRadius.circular(20),
                   ),
                   child: Column(
                     children: [
@@ -826,13 +936,13 @@ class _GuestCardScreenState extends State<GuestCardScreen> {
 
   // ───────────────────────── TEMPLATE 6: Restaurant / Dining ─────────────────────────
 
-  Widget _buildRestaurantTemplate(WifiNetwork network) {
+  Widget _buildRestaurantTemplate(WifiNetwork network, {bool isForExport = false}) {
     return Container(
       width: 300,
-      height: 450,
+      height: isForExport ? 424.2 : 450,
       decoration: BoxDecoration(
         color: const Color(0xFF2C0E14), // Deep Burgundy
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: isForExport ? BorderRadius.zero : BorderRadius.circular(24),
         border: Border.all(color: const Color(0xFFD4AF37), width: 2), // Gold Border
       ),
       child: Padding(
@@ -907,17 +1017,17 @@ class _GuestCardScreenState extends State<GuestCardScreen> {
 
   // ───────────────────────── TEMPLATE 7: Tourist / Travel ─────────────────────────
 
-  Widget _buildTravelTemplate(WifiNetwork network) {
+  Widget _buildTravelTemplate(WifiNetwork network, {bool isForExport = false}) {
     return Container(
       width: 300,
-      height: 450,
+      height: isForExport ? 424.2 : 450,
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           begin: Alignment.topRight,
           end: Alignment.bottomLeft,
           colors: [Color(0xFFFF9900), Color(0xFFFF5E62)],
         ),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: isForExport ? BorderRadius.zero : BorderRadius.circular(24),
       ),
       child: Stack(
         children: [
@@ -951,7 +1061,7 @@ class _GuestCardScreenState extends State<GuestCardScreen> {
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(32),
+                      borderRadius: isForExport ? BorderRadius.zero : BorderRadius.circular(32),
                       boxShadow: [BoxShadow(color: const Color(0xFFFF5E62).withValues(alpha: 0.4), blurRadius: 20, offset: const Offset(0, 10))],
                     ),
                     child: QrImageView(
@@ -993,13 +1103,13 @@ class _GuestCardScreenState extends State<GuestCardScreen> {
 
   // ───────────────────────── TEMPLATE 8: School / University ─────────────────────────
 
-  Widget _buildSchoolTemplate(WifiNetwork network) {
+  Widget _buildSchoolTemplate(WifiNetwork network, {bool isForExport = false}) {
     return Container(
       width: 300,
-      height: 450,
+      height: isForExport ? 424.2 : 450,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16), // Less rounded for ID card look
+        borderRadius: isForExport ? BorderRadius.zero : BorderRadius.circular(16), // Less rounded for ID card look
         border: Border.all(color: Colors.grey.shade300, width: 1),
       ),
       child: Column(
@@ -1048,7 +1158,7 @@ class _GuestCardScreenState extends State<GuestCardScreen> {
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: isForExport ? BorderRadius.zero : BorderRadius.circular(8),
                       border: Border.all(color: Colors.grey.shade300),
                     ),
                     child: Column(
@@ -1074,13 +1184,13 @@ class _GuestCardScreenState extends State<GuestCardScreen> {
 
   // ───────────────────────── TEMPLATE 9: Vehicle / Rideshare ─────────────────────────
 
-  Widget _buildVehicleTemplate(WifiNetwork network) {
+  Widget _buildVehicleTemplate(WifiNetwork network, {bool isForExport = false}) {
     return Container(
       width: 300,
-      height: 450,
+      height: isForExport ? 424.2 : 450,
       decoration: BoxDecoration(
         color: Colors.black,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: isForExport ? BorderRadius.zero : BorderRadius.circular(24),
         border: Border.all(color: const Color(0xFF39FF14).withValues(alpha: 0.3), width: 1), // Neon Green border
       ),
       child: Padding(
@@ -1111,7 +1221,7 @@ class _GuestCardScreenState extends State<GuestCardScreen> {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: isForExport ? BorderRadius.zero : BorderRadius.circular(20),
                 boxShadow: [BoxShadow(color: const Color(0xFF39FF14).withValues(alpha: 0.2), blurRadius: 20, spreadRadius: 5)],
               ),
               child: QrImageView(
@@ -1130,30 +1240,19 @@ class _GuestCardScreenState extends State<GuestCardScreen> {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: const Color(0xFF111111),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: isForExport ? BorderRadius.zero : BorderRadius.circular(16),
                 border: Border.all(color: const Color(0xFF222222)),
               ),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('WIFI', style: TextStyle(color: Color(0xFF39FF14), fontSize: 10, fontWeight: FontWeight.bold)),
-                        Text(network.ssid, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis),
-                      ],
-                    ),
-                  ),
-                  if (network.password.isNotEmpty)
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          const Text('PASS', style: TextStyle(color: Color(0xFF39FF14), fontSize: 10, fontWeight: FontWeight.bold)),
-                          Text(network.password, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis),
-                        ],
-                      ),
-                    ),
+                  const Text('WIFI', style: TextStyle(color: Color(0xFF39FF14), fontSize: 10, fontWeight: FontWeight.bold)),
+                  Text(network.ssid, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  if (network.password.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    const Text('PASS', style: TextStyle(color: Color(0xFF39FF14), fontSize: 10, fontWeight: FontWeight.bold)),
+                    Text(network.password, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  ],
                 ],
               ),
             ),
@@ -1165,12 +1264,12 @@ class _GuestCardScreenState extends State<GuestCardScreen> {
 
   // ───────────────────────── TEMPLATE 10: Event / Conference ─────────────────────────
 
-  Widget _buildEventTemplate(WifiNetwork network) {
+  Widget _buildEventTemplate(WifiNetwork network, {bool isForExport = false}) {
     return Container(
       width: 300,
-      height: 450,
+      height: isForExport ? 424.2 : 450,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: isForExport ? BorderRadius.zero : BorderRadius.circular(24),
         gradient: const LinearGradient(
           begin: Alignment.bottomLeft,
           end: Alignment.topRight,
@@ -1186,7 +1285,7 @@ class _GuestCardScreenState extends State<GuestCardScreen> {
             height: 12,
             decoration: BoxDecoration(
               color: Colors.black.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: isForExport ? BorderRadius.zero : BorderRadius.circular(6),
             ),
           ),
           const SizedBox(height: 20),
@@ -1198,7 +1297,7 @@ class _GuestCardScreenState extends State<GuestCardScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: isForExport ? BorderRadius.zero : BorderRadius.circular(20),
                   ),
                   child: const Text('GUEST ACCESS', style: TextStyle(color: Color(0xFF8E2DE2), fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1)),
                 ),
@@ -1215,7 +1314,7 @@ class _GuestCardScreenState extends State<GuestCardScreen> {
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(24),
+                    borderRadius: isForExport ? BorderRadius.zero : BorderRadius.circular(24),
                   ),
                   child: QrImageView(
                     data: network.qrData,
@@ -1234,7 +1333,7 @@ class _GuestCardScreenState extends State<GuestCardScreen> {
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: isForExport ? BorderRadius.zero : BorderRadius.circular(16),
                     border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
                   ),
                   child: Column(

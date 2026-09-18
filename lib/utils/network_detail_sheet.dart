@@ -7,12 +7,18 @@ import 'package:path_provider/path_provider.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
+import 'package:gal/gal.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:screenshot/screenshot.dart';
 import '../models/wifi_network.dart';
 import 'constants.dart';
+import 'pdf_generator.dart';
 
 /// Shared bottom sheet for displaying network details.
 /// Used by both DashboardScreen and HistoryScreen.
 void showNetworkDetailsSheet(BuildContext context, WifiNetwork network) {
+  final screenshotController = ScreenshotController();
+  
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
@@ -90,35 +96,69 @@ void showNetworkDetailsSheet(BuildContext context, WifiNetwork network) {
 
             // QR Code
             Center(
-              child: Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 20, spreadRadius: 5),
-                  ],
-                ),
-                child: QrImageView(
-                  data: network.qrData,
-                  version: QrVersions.auto,
-                  size: 200.0,
-                  backgroundColor: Colors.white,
-                  dataModuleStyle: QrDataModuleStyle(
-                    dataModuleShape: network.isSquareDots ? QrDataModuleShape.square : QrDataModuleShape.circle,
-                    color: network.qrColorHex != null ? Color(int.parse(network.qrColorHex!, radix: 16)) : Colors.black,
+              child: Screenshot(
+                controller: screenshotController,
+                child: Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 20, spreadRadius: 5),
+                    ],
                   ),
-                  eyeStyle: QrEyeStyle(
-                    eyeShape: network.isSquareEyes ? QrEyeShape.square : QrEyeShape.circle,
-                    color: network.qrColorHex != null ? Color(int.parse(network.qrColorHex!, radix: 16)) : Colors.black,
+                  child: QrImageView(
+                    data: network.qrData,
+                    version: QrVersions.auto,
+                    size: 200.0,
+                    backgroundColor: Colors.white,
+                    dataModuleStyle: QrDataModuleStyle(
+                      dataModuleShape: network.isSquareDots ? QrDataModuleShape.square : QrDataModuleShape.circle,
+                      color: network.qrColorHex != null ? Color(int.parse(network.qrColorHex!, radix: 16)) : Colors.black,
+                    ),
+                    eyeStyle: QrEyeStyle(
+                      eyeShape: network.isSquareEyes ? QrEyeShape.square : QrEyeShape.circle,
+                      color: network.qrColorHex != null ? Color(int.parse(network.qrColorHex!, radix: 16)) : Colors.black,
+                    ),
+                    embeddedImage: MemoryImage(base64Decode(AppConstants.wifiLogoBase64)),
+                    embeddedImageStyle: const QrEmbeddedImageStyle(size: Size(36, 36)),
                   ),
-                  embeddedImage: MemoryImage(base64Decode(AppConstants.wifiLogoBase64)),
-                  embeddedImageStyle: const QrEmbeddedImageStyle(size: Size(36, 36)),
                 ),
               ),
             ),
 
             const SizedBox(height: 32),
+
+            // Action Buttons
+            Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: () => _saveQrCode(sheetContext, network, screenshotController),
+                  icon: const Icon(FluentIcons.save_24_regular),
+                  label: const Text('Save'),
+                  style: OutlinedButton.styleFrom(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                ),
+                OutlinedButton.icon(
+                  onPressed: () => _shareQrCode(sheetContext, network, screenshotController),
+                  icon: const Icon(FluentIcons.share_24_regular),
+                  label: const Text('Share'),
+                  style: OutlinedButton.styleFrom(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                ),
+                FilledButton.icon(
+                  onPressed: () => _printQrCode(sheetContext, network),
+                  icon: const Icon(FluentIcons.print_24_regular),
+                  label: const Text('Print'),
+                  style: FilledButton.styleFrom(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    backgroundColor: Theme.of(sheetContext).colorScheme.primary,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
 
             // Pin to Home Screen Button
             FilledButton.icon(
@@ -232,6 +272,74 @@ Future<void> _pinToHomeScreen(BuildContext context, WifiNetwork network) async {
         ),
       );
     }
+  }
+}
+
+Future<void> _saveQrCode(BuildContext context, WifiNetwork network, ScreenshotController screenshotController) async {
+  try {
+    final image = await screenshotController.capture();
+    if (image != null) {
+      final hasAccess = await Gal.hasAccess();
+      if (!hasAccess) await Gal.requestAccess();
+      final directory = await getTemporaryDirectory();
+      final path = '${directory.path}/wifi_qr_${DateTime.now().millisecondsSinceEpoch}.png';
+      final file = File(path);
+      await file.writeAsBytes(image);
+      await Gal.putImage(path);
+      if (context.mounted) {
+        showDialog(
+          context: context,
+          barrierColor: Colors.transparent,
+          builder: (ctx) {
+            Future.delayed(const Duration(milliseconds: 1500), () {
+              if (ctx.mounted) Navigator.of(ctx).pop();
+            });
+            return Dialog(
+              backgroundColor: Colors.black87,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(FluentIcons.checkmark_circle_24_regular, color: Colors.greenAccent),
+                    const SizedBox(width: 12),
+                    const Text('Saved to Gallery', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      }
+    }
+  } catch (e) {
+    if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error saving QR Code: $e')));
+  }
+}
+
+Future<void> _shareQrCode(BuildContext context, WifiNetwork network, ScreenshotController screenshotController) async {
+  try {
+    final image = await screenshotController.capture();
+    if (image != null) {
+      final directory = await getTemporaryDirectory();
+      final path = '${directory.path}/wifi_qr_${DateTime.now().millisecondsSinceEpoch}.png';
+      final file = File(path);
+      await file.writeAsBytes(image);
+      final xFile = XFile(path);
+      await Share.shareXFiles([xFile], text: 'Connect to my Wi-Fi: ${network.ssid}');
+    }
+  } catch (e) {
+    if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error sharing QR Code: $e')));
+  }
+}
+
+Future<void> _printQrCode(BuildContext context, WifiNetwork network) async {
+  try {
+    await PdfGenerator.printWifiPoster(network);
+  } catch (e) {
+    if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error printing poster: $e')));
   }
 }
 

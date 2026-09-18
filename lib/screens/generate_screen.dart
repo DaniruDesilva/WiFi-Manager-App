@@ -193,8 +193,30 @@ class _GenerateScreenState extends State<GenerateScreen> {
         await Gal.putImage(path);
         
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('QR Code saved to gallery')),
+          showDialog(
+            context: context,
+            barrierColor: Colors.transparent,
+            builder: (ctx) {
+              Future.delayed(const Duration(milliseconds: 1500), () {
+                if (ctx.mounted) Navigator.of(ctx).pop();
+              });
+              return Dialog(
+                backgroundColor: Colors.black87,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(FluentIcons.checkmark_circle_24_regular, color: Colors.greenAccent),
+                      const SizedBox(width: 12),
+                      const Text('Saved to Gallery', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                ),
+              );
+            },
           );
         }
       }
@@ -454,7 +476,25 @@ class _GenerateScreenState extends State<GenerateScreen> {
                         ],
                         const SizedBox(height: 16),
                         SwitchListTile(
-                          title: const Text('Hidden Network', style: TextStyle(fontWeight: FontWeight.w500)),
+                          title: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Text('Hidden Network', style: TextStyle(fontWeight: FontWeight.w500)),
+                              const SizedBox(width: 8),
+                              Tooltip(
+                                message: 'Enable if the Wi-Fi network does not broadcast its name publicly.',
+                                triggerMode: TooltipTriggerMode.tap,
+                                margin: const EdgeInsets.symmetric(horizontal: 20),
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.black87,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                textStyle: const TextStyle(color: Colors.white, fontSize: 13),
+                                child: Icon(FluentIcons.info_20_regular, size: 18, color: Colors.grey.shade500),
+                              ),
+                            ],
+                          ),
                           value: _isHidden,
                           onChanged: (value) => setState(() => _isHidden = value),
                           activeThumbColor: Theme.of(context).colorScheme.primary,

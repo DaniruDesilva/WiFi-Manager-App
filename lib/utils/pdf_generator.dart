@@ -5,6 +5,19 @@ import 'package:printing/printing.dart';
 import '../models/wifi_network.dart';
 
 class PdfGenerator {
+  static PdfColor _parseColor(String? hexString) {
+    if (hexString == null || hexString.isEmpty) return PdfColors.black;
+    try {
+      final int value = int.parse(hexString, radix: 16);
+      final double a = ((value >> 24) & 0xff) / 255.0;
+      final double r = ((value >> 16) & 0xff) / 255.0;
+      final double g = ((value >> 8) & 0xff) / 255.0;
+      final double b = (value & 0xff) / 255.0;
+      return PdfColor(r, g, b, a);
+    } catch (e) {
+      return PdfColors.black;
+    }
+  }
   static Future<void> printWifiPoster(WifiNetwork network) async {
     final doc = pw.Document();
 
@@ -42,7 +55,7 @@ class PdfGenerator {
                     barcode: pw.Barcode.qrCode(),
                     width: 250,
                     height: 250,
-                    color: network.qrColorHex != null ? PdfColor.fromHex(network.qrColorHex!) : PdfColors.black,
+                    color: _parseColor(network.qrColorHex),
                   ),
                 ),
                 if (network.password.isNotEmpty && !network.isHidden) ...[
@@ -93,6 +106,7 @@ class PdfGenerator {
                   barcode: pw.Barcode.qrCode(),
                   width: 150,
                   height: 150,
+                  color: _parseColor(network.qrColorHex),
                 ),
               ),
               pw.SizedBox(height: 24),
