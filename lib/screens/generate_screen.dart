@@ -20,6 +20,8 @@ import '../providers/history_provider.dart';
 import '../models/wifi_network.dart';
 import '../utils/constants.dart';
 import '../utils/pdf_generator.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:in_app_review/in_app_review.dart';
 
 class GenerateScreen extends StatefulWidget {
   const GenerateScreen({super.key});
@@ -68,7 +70,7 @@ class _GenerateScreenState extends State<GenerateScreen> {
       securityType: _securityType,
       isHidden: _isHidden,
       category: _category,
-      qrColorHex: _qrColor.value.toRadixString(16).padLeft(8, '0'),
+      qrColorHex: _qrColor.toARGB32().toRadixString(16).padLeft(8, '0'),
       isSquareDots: _isSquareDots,
       isSquareEyes: _isSquareEyes,
     );
@@ -79,6 +81,21 @@ class _GenerateScreenState extends State<GenerateScreen> {
 
     Provider.of<HistoryProvider>(context, listen: false).addNetwork(network);
     FocusScope.of(context).unfocus();
+
+    _checkAndRequestReview();
+  }
+
+  Future<void> _checkAndRequestReview() async {
+    final prefs = await SharedPreferences.getInstance();
+    int count = (prefs.getInt('generate_count') ?? 0) + 1;
+    await prefs.setInt('generate_count', count);
+
+    if (count == 3 || count == 10) {
+      final InAppReview inAppReview = InAppReview.instance;
+      if (await inAppReview.isAvailable()) {
+        inAppReview.requestReview();
+      }
+    }
   }
 
   Future<void> _autoDetectWifi() async {
@@ -237,7 +254,7 @@ class _GenerateScreenState extends State<GenerateScreen> {
 
         // Write Wi-Fi data as a text NDEF record
         final wifiData = _generatedNetwork!.qrData;
-        final languageCode = 'en';
+        const languageCode = 'en';
         final textBytes = utf8.encode(wifiData);
         final languageCodeBytes = utf8.encode(languageCode);
         final payloadBytes = <int>[
@@ -320,7 +337,7 @@ class _GenerateScreenState extends State<GenerateScreen> {
     required void Function(T?) onChanged,
   }) {
     return DropdownButtonFormField<T>(
-      value: value,
+      initialValue: value,
       icon: const Icon(FluentIcons.chevron_down_20_regular),
       style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16, color: Theme.of(context).textTheme.bodyLarge?.color),
       decoration: InputDecoration(
@@ -440,7 +457,7 @@ class _GenerateScreenState extends State<GenerateScreen> {
                           title: const Text('Hidden Network', style: TextStyle(fontWeight: FontWeight.w500)),
                           value: _isHidden,
                           onChanged: (value) => setState(() => _isHidden = value),
-                          activeColor: Theme.of(context).colorScheme.primary,
+                          activeThumbColor: Theme.of(context).colorScheme.primary,
                           contentPadding: EdgeInsets.zero,
                         ),
                       ],
@@ -485,14 +502,14 @@ class _GenerateScreenState extends State<GenerateScreen> {
                           title: const Text('Square Dots', style: TextStyle(fontWeight: FontWeight.w500)),
                           value: _isSquareDots,
                           onChanged: (val) => setState(() => _isSquareDots = val),
-                          activeColor: Theme.of(context).colorScheme.primary,
+                          activeThumbColor: Theme.of(context).colorScheme.primary,
                           contentPadding: EdgeInsets.zero,
                         ),
                         SwitchListTile(
                           title: const Text('Square Corner Eyes', style: TextStyle(fontWeight: FontWeight.w500)),
                           value: _isSquareEyes,
                           onChanged: (val) => setState(() => _isSquareEyes = val),
-                          activeColor: Theme.of(context).colorScheme.primary,
+                          activeThumbColor: Theme.of(context).colorScheme.primary,
                           contentPadding: EdgeInsets.zero,
                         ),
                       ],

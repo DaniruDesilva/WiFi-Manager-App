@@ -118,7 +118,7 @@ class DashboardScreen extends StatelessWidget {
                   ),
                 )
               else
-                ...history.take(3).map((n) => _buildMiniNetworkTile(context, n)).toList(),
+                ...history.take(3).map((n) => _buildMiniNetworkTile(context, n)),
                 
               const SizedBox(height: 48), // Bottom padding
             ],

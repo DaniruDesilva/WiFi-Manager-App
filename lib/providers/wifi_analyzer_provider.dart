@@ -171,9 +171,7 @@ class WifiAnalyzerProvider with ChangeNotifier, WidgetsBindingObserver {
         }
         
         // Fallback to strongest if we still don't know, though less accurate.
-        if (_connectedNetwork == null) {
-          _connectedNetwork = _accessPoints.first;
-        }
+        _connectedNetwork ??= _accessPoints.first;
       }
       notifyListeners();
     } catch (e) {
@@ -195,6 +193,7 @@ class WifiAnalyzerProvider with ChangeNotifier, WidgetsBindingObserver {
   @override
   void dispose() {
     stopScanning();
+    _resultsSubscription?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }

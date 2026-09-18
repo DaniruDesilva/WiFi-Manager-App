@@ -375,7 +375,7 @@ class DeviceFingerprintService {
       final socket = await RawDatagramSocket.bind(InternetAddress.anyIPv4, 0);
       socket.readEventsEnabled = true;
       
-      final msg = "M-SEARCH * HTTP/1.1\r\n"
+      const msg = "M-SEARCH * HTTP/1.1\r\n"
           "HOST: 239.255.255.250:1900\r\n"
           "MAN: \"ssdp:discover\"\r\n"
           "MX: 1\r\n"
@@ -391,7 +391,7 @@ class DeviceFingerprintService {
           if (d != null) {
             final response = utf8.decode(d.data, allowMalformed: true);
             
-            final serverMatch = RegExp(r'(?i)SERVER:\s*(.+)').firstMatch(response);
+            final serverMatch = RegExp(r'SERVER:\s*(.+)', caseSensitive: false).firstMatch(response);
             if (serverMatch != null) {
               String srv = serverMatch.group(1)!.trim();
               if (srv.length > 30) {

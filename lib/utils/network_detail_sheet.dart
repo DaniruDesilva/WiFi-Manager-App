@@ -164,8 +164,14 @@ Future<void> _pinToHomeScreen(BuildContext context, WifiNetwork network) async {
       final qrCode = qrValidationResult.qrCode;
       final painter = QrPainter.withQr(
         qr: qrCode!,
-        color: network.qrColorHex != null ? Color(int.parse(network.qrColorHex!, radix: 16)) : Colors.black,
-        emptyColor: Colors.white,
+        dataModuleStyle: QrDataModuleStyle(
+          dataModuleShape: QrDataModuleShape.square,
+          color: network.qrColorHex != null ? Color(int.parse(network.qrColorHex!, radix: 16)) : Colors.black,
+        ),
+        eyeStyle: QrEyeStyle(
+          eyeShape: QrEyeShape.square,
+          color: network.qrColorHex != null ? Color(int.parse(network.qrColorHex!, radix: 16)) : Colors.black,
+        ),
         gapless: true,
       );
       

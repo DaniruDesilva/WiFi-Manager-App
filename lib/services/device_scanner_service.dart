@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 import 'package:network_info_plus/network_info_plus.dart';
 import 'package:network_tools/network_tools.dart';
-import 'package:wifi_scan/wifi_scan.dart';
 
 import '../models/network_device.dart';
 import 'device_fingerprint_service.dart';
@@ -185,8 +184,7 @@ class DeviceScannerService {
         );
       }
     }
-
-    progressTimer?.cancel();
+    progressTimer.cancel();
     onProgress?.call(100);
   }
 

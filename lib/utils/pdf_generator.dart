@@ -18,7 +18,7 @@ class PdfGenerator {
               children: [
                 pw.Text(
                   'Scan to Connect',
-                  style: pw.TextStyle(
+                  style: const pw.TextStyle(
                     fontSize: 40,
                     fontWeight: pw.FontWeight.bold,
                   ),
@@ -26,7 +26,7 @@ class PdfGenerator {
                 pw.SizedBox(height: 20),
                 pw.Text(
                   'Wi-Fi: ${network.ssid}',
-                  style: pw.TextStyle(
+                  style: const pw.TextStyle(
                     fontSize: 24,
                   ),
                 ),
@@ -49,7 +49,7 @@ class PdfGenerator {
                   pw.SizedBox(height: 40),
                   pw.Text(
                     'Password: ${network.password}',
-                    style: pw.TextStyle(
+                    style: const pw.TextStyle(
                       fontSize: 20,
                     ),
                   ),
@@ -80,7 +80,7 @@ class PdfGenerator {
           child: pw.Column(
             mainAxisAlignment: pw.MainAxisAlignment.center,
             children: [
-              pw.Text('GUEST WI-FI', style: pw.TextStyle(fontSize: 32, fontWeight: pw.FontWeight.bold, letterSpacing: 2)),
+              pw.Text('GUEST WI-FI', style: const pw.TextStyle(fontSize: 32, fontWeight: pw.FontWeight.bold, letterSpacing: 2)),
               pw.SizedBox(height: 24),
               pw.Container(
                 padding: const pw.EdgeInsets.all(16),
@@ -96,7 +96,7 @@ class PdfGenerator {
                 ),
               ),
               pw.SizedBox(height: 24),
-              pw.Text(network.ssid, style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold)),
+              pw.Text(network.ssid, style: const pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold)),
               if (network.password.isNotEmpty) ...[
                 pw.SizedBox(height: 8),
                 pw.Text('Password: ${network.password}', style: const pw.TextStyle(fontSize: 18, color: PdfColors.grey700)),

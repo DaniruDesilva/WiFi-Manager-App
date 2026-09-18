@@ -715,7 +715,7 @@ class _GuestCardScreenState extends State<GuestCardScreen> {
             Container(width: 120, height: 1.5, color: const Color(0xFF111111)),
             const SizedBox(height: 16),
             
-            Text('NETWORK', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 10, color: Color(0xFF111111), letterSpacing: 1)),
+            Text('NETWORK', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 10, color: Color(0xFF111111), letterSpacing: 1)),
             const SizedBox(height: 4),
             Text(
               network.ssid,
@@ -726,7 +726,7 @@ class _GuestCardScreenState extends State<GuestCardScreen> {
             
             if (network.password.isNotEmpty) ...[
               const SizedBox(height: 12),
-              Text('PASSCODE', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 10, color: Color(0xFF111111), letterSpacing: 1)),
+              Text('PASSCODE', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 10, color: Color(0xFF111111), letterSpacing: 1)),
               const SizedBox(height: 4),
               Text(
                 network.password,
@@ -758,7 +758,7 @@ class _GuestCardScreenState extends State<GuestCardScreen> {
           // Decorative background circles
           Positioned(
             top: -60, left: -60,
-            child: Container(width: 150, height: 150, decoration: BoxDecoration(color: const Color(0xFFE8D5C4), shape: BoxShape.circle)),
+            child: Container(width: 150, height: 150, decoration: const BoxDecoration(color: Color(0xFFE8D5C4), shape: BoxShape.circle)),
           ),
           Padding(
             padding: const EdgeInsets.all(28.0),
@@ -806,11 +806,11 @@ class _GuestCardScreenState extends State<GuestCardScreen> {
                   ),
                   child: Column(
                     children: [
-                      Text('NETWORK', style: TextStyle(color: const Color(0xFF795548), fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 1)),
+                      Text('NETWORK', style: const TextStyle(color: Color(0xFF795548), fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 1)),
                       Text(network.ssid, style: const TextStyle(color: Color(0xFF4E342E), fontSize: 15, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis),
                       if (network.password.isNotEmpty) ...[
                         const SizedBox(height: 8),
-                        Text('PASSWORD', style: TextStyle(color: const Color(0xFF795548), fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 1)),
+                        Text('PASSWORD', style: const TextStyle(color: Color(0xFF795548), fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 1)),
                         Text(network.password, style: const TextStyle(color: Color(0xFF4E342E), fontSize: 15, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis),
                       ],
                     ],
