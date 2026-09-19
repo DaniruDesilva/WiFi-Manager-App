@@ -11,6 +11,7 @@ import 'generate_screen.dart';
 import 'tools_dashboard_screen.dart';
 import 'security_settings_screen.dart';
 import '../widgets/pin_dialog.dart';
+import '../utils/ad_helper.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -29,7 +30,10 @@ class _MainScreenState extends State<MainScreen> {
     super.initState();
     _pageController = PageController(initialPage: _currentIndex);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _tryUnlockApp();
+      if (mounted) {
+        _tryUnlockApp();
+        AdHelper.loadInterstitialAd(context);
+      }
     });
   }
 
@@ -154,11 +158,13 @@ class _MainScreenState extends State<MainScreen> {
             );
           }
 
-          return PageView(
+          Widget pageContent = PageView(
             controller: _pageController,
             physics: const NeverScrollableScrollPhysics(),
             children: screens,
           );
+
+          return pageContent;
         },
       ),
       floatingActionButton: (_currentIndex == 2 && !isKeyboardOpen) ? FloatingActionButton.extended(

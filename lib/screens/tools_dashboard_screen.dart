@@ -10,6 +10,8 @@ import 'device_scanner_screen.dart';
 import 'wifi_analyzer_screen.dart';
 import 'router_admin_screen.dart';
 import 'router_passwords_screen.dart';
+import '../widgets/native_ad_widget.dart';
+import '../widgets/banner_ad_widget.dart';
 
 class ToolsDashboardScreen extends StatelessWidget {
   const ToolsDashboardScreen({super.key});
@@ -21,10 +23,11 @@ class ToolsDashboardScreen extends StatelessWidget {
         return SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 24.0),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                'Network\nTools',
+                'Network Tools',
+                textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                   fontWeight: FontWeight.w900,
                   height: 1.1,
@@ -33,6 +36,7 @@ class ToolsDashboardScreen extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 'Diagnose, analyze, and manage\nyour Wi-Fi network.',
+                textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Theme.of(context).brightness == Brightness.light
                       ? Colors.grey.shade700
@@ -85,6 +89,10 @@ class ToolsDashboardScreen extends StatelessWidget {
                   .animate().fade(delay: 400.ms).slideY(begin: 0.2),
               const SizedBox(height: 16),
 
+              // Native Ad
+              const Center(child: NativeAdWidget()),
+              const SizedBox(height: 16),
+
               // Router Tools Row
               Row(
                 children: [
@@ -120,6 +128,8 @@ class ToolsDashboardScreen extends StatelessWidget {
                 ],
               ).animate().fade(delay: 500.ms).slideY(begin: 0.2),
 
+              const SizedBox(height: 24),
+              const BannerAdWidget(),
               const SizedBox(height: 48),
             ],
           ),

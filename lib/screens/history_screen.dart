@@ -10,6 +10,9 @@ import '../providers/security_provider.dart';
 import '../services/backup_service.dart';
 import '../utils/network_detail_sheet.dart';
 import '../widgets/pin_dialog.dart';
+import '../widgets/native_ad_widget.dart';
+import '../widgets/banner_ad_widget.dart';
+import '../providers/premium_provider.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -73,8 +76,8 @@ class _HistoryScreenState extends State<HistoryScreen> with AutomaticKeepAliveCl
     super.build(context); // Required by AutomaticKeepAliveClientMixin
 
 
-    return Consumer2<SecurityProvider, HistoryProvider>(
-      builder: (context, security, historyProvider, child) {
+    return Consumer3<SecurityProvider, HistoryProvider, PremiumProvider>(
+      builder: (context, security, historyProvider, premiumProvider, child) {
 
     if (!security.isHistoryUnlocked) {
       return Center(
@@ -243,9 +246,20 @@ class _HistoryScreenState extends State<HistoryScreen> with AutomaticKeepAliveCl
                     )
                   : ListView.builder(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      itemCount: filteredList.length,
+                      itemCount: premiumProvider.isPremium 
+                          ? filteredList.length 
+                          : filteredList.length + (filteredList.length ~/ 4),
                       itemBuilder: (context, index) {
-                        final network = filteredList[index];
+                        if (!premiumProvider.isPremium && index > 0 && (index + 1) % 5 == 0) {
+                          return const Padding(
+                            padding: EdgeInsets.only(bottom: 12.0),
+                            child: Center(child: NativeAdWidget()),
+                          );
+                        }
+                        
+                        final networkIndex = premiumProvider.isPremium ? index : index - (index ~/ 5);
+                        final network = filteredList[networkIndex];
+                        
                         IconData getCategoryIcon() {
                           switch (network.category) {
                             case 'Home': return FluentIcons.home_24_regular;
@@ -342,6 +356,7 @@ class _HistoryScreenState extends State<HistoryScreen> with AutomaticKeepAliveCl
                       },
                     ),
             ),
+            const BannerAdWidget(),
           ],
         );
       },

@@ -27,10 +27,11 @@ class DashboardScreen extends StatelessWidget {
         return SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                'Share Wi-Fi\ninstantly',
+                'Share Wi-Fi instantly',
+                textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                       fontWeight: FontWeight.w900,
                       height: 1.1,
@@ -41,6 +42,7 @@ class DashboardScreen extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 'Create a QR code so guests connect\nwithout typing passwords.',
+                textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Theme.of(context).brightness == Brightness.light ? Colors.grey.shade700 : Colors.grey.shade400,
                   fontSize: 16,

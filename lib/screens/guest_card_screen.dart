@@ -14,8 +14,11 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import '../models/wifi_network.dart';
-import '../utils/constants.dart';
 import '../utils/pdf_generator.dart';
+import '../utils/ad_helper.dart';
+import '../providers/premium_provider.dart';
+import 'package:provider/provider.dart';
+import 'paywall_screen.dart';
 
 class GuestCardScreen extends StatefulWidget {
   final WifiNetwork? network;
@@ -33,20 +36,66 @@ class _GuestCardScreenState extends State<GuestCardScreen> {
   bool _isExporting = false;
 
   final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _ssidController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  String _securityType = 'WPA';
+  bool _isHidden = false;
 
   @override
   void initState() {
     super.initState();
     _titleController.text = _title;
+    if (widget.network != null) {
+      _ssidController.text = widget.network!.ssid;
+      _passwordController.text = widget.network!.password;
+      _securityType = widget.network!.securityType;
+      _isHidden = widget.network!.isHidden;
+    } else {
+      _ssidController.text = 'Guest Network';
+      _passwordController.text = '';
+      _securityType = 'WPA';
+    }
   }
 
   @override
   void dispose() {
     _titleController.dispose();
+    _ssidController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
+  WifiNetwork get _currentNetwork {
+    return WifiNetwork(
+      ssid: _ssidController.text,
+      password: _passwordController.text,
+      securityType: _securityType,
+      isHidden: _isHidden,
+    );
+  }
+
   Future<void> _shareGuestCard() async {
+    if (_titleController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a Card Title before exporting.')),
+      );
+      return;
+    }
+    
+    if (_ssidController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a Wi-Fi Name (SSID) before exporting.')),
+      );
+      return;
+    }
+
+    if (_securityType != 'nopass' && _passwordController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a Password for this security type.')),
+      );
+      return;
+    }
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -104,7 +153,7 @@ class _GuestCardScreenState extends State<GuestCardScreen> {
       final Uint8List image = await _screenshotController.captureFromWidget(
         Material(
           color: Colors.transparent,
-          child: _buildSelectedTemplate(widget.network!, isForExport: true),
+          child: _buildSelectedTemplate(_currentNetwork, isForExport: true),
         ),
         delay: const Duration(milliseconds: 50),
         pixelRatio: 3.0,
@@ -143,6 +192,7 @@ class _GuestCardScreenState extends State<GuestCardScreen> {
             },
           );
         }
+        if (mounted) AdHelper.showInterstitialAd(context);
       }
     } catch (e) {
       if (mounted) {
@@ -160,7 +210,7 @@ class _GuestCardScreenState extends State<GuestCardScreen> {
       final Uint8List imageBytes = await _screenshotController.captureFromWidget(
         Material(
           color: Colors.transparent,
-          child: _buildSelectedTemplate(widget.network!, isForExport: true),
+          child: _buildSelectedTemplate(_currentNetwork, isForExport: true),
         ),
         delay: const Duration(milliseconds: 50),
         pixelRatio: 3.0,
@@ -186,6 +236,7 @@ class _GuestCardScreenState extends State<GuestCardScreen> {
           },
           name: 'Guest_WiFi_Card',
         );
+        if (mounted) AdHelper.showInterstitialAd(context);
       }
     } catch (e) {
       if (mounted) {
@@ -205,7 +256,7 @@ class _GuestCardScreenState extends State<GuestCardScreen> {
       final Uint8List image = await _screenshotController.captureFromWidget(
         Material(
           color: Colors.transparent,
-          child: _buildSelectedTemplate(widget.network!, isForExport: true),
+          child: _buildSelectedTemplate(_currentNetwork, isForExport: true),
         ),
         delay: const Duration(milliseconds: 50),
         pixelRatio: 3.0,
@@ -215,6 +266,7 @@ class _GuestCardScreenState extends State<GuestCardScreen> {
       if (image.isNotEmpty) {
         final xfile = XFile.fromData(image, mimeType: 'image/png', name: 'guest_wifi_card.png');
         await Share.shareXFiles([xfile], text: 'Here is the Wi-Fi connection card!');
+        if (mounted) AdHelper.showInterstitialAd(context);
       }
     } catch (e) {
       if (mounted) {
@@ -229,25 +281,7 @@ class _GuestCardScreenState extends State<GuestCardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.network == null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Make a Guest Card')),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(FluentIcons.wifi_off_24_regular, size: 80, color: Colors.grey.shade400),
-              const SizedBox(height: 16),
-              const Text('No Network Selected', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              const Text('Please generate or save a network first.', style: TextStyle(color: Colors.grey)),
-            ],
-          ).animate().fade().scale(),
-        ),
-      );
-    }
-
-    final network = widget.network!;
+    final network = _currentNetwork;
 
     return Scaffold(
       appBar: AppBar(
@@ -333,6 +367,56 @@ class _GuestCardScreenState extends State<GuestCardScreen> {
                                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                               ),
                             ),
+                            const SizedBox(height: 16),
+                            const Text('Wi-Fi Name (SSID)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                            const SizedBox(height: 12),
+                            TextField(
+                              controller: _ssidController,
+                              onChanged: (val) => setState(() {}),
+                              decoration: InputDecoration(
+                                filled: true,
+                                fillColor: Theme.of(context).scaffoldBackgroundColor,
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            const Text('Password', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                            const SizedBox(height: 12),
+                            TextField(
+                              controller: _passwordController,
+                              onChanged: (val) => setState(() {}),
+                              decoration: InputDecoration(
+                                filled: true,
+                                fillColor: Theme.of(context).scaffoldBackgroundColor,
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            const Text('Security Type', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                            const SizedBox(height: 12),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).scaffoldBackgroundColor,
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: DropdownButtonHideUnderline(
+                                child: DropdownButton<String>(
+                                  value: _securityType,
+                                  isExpanded: true,
+                                  items: const [
+                                    DropdownMenuItem(value: 'WPA', child: Text('WPA/WPA2/WPA3')),
+                                    DropdownMenuItem(value: 'WEP', child: Text('WEP')),
+                                    DropdownMenuItem(value: 'nopass', child: Text('None')),
+                                  ],
+                                  onChanged: (val) {
+                                    if (val != null) setState(() => _securityType = val);
+                                  },
+                                ),
+                              ),
+                            ),
                             const SizedBox(height: 24),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -392,8 +476,17 @@ class _GuestCardScreenState extends State<GuestCardScreen> {
       'Tech Modern', 'Minimalist', 'Stealth', 'Boutique',
       'Cafe', 'Restaurant', 'Travel', 'School', 'Vehicle', 'Event'
     ];
+    // Templates 2 (Stealth) and 3 (Boutique) and 6 (Travel) are premium
+    final isPremiumTemplate = index == 2 || index == 3 || index == 6; 
+    
     return GestureDetector(
-      onTap: () => setState(() => _selectedTemplateIndex = index),
+      onTap: () {
+        if (isPremiumTemplate && !context.read<PremiumProvider>().isPremium) {
+          Navigator.push(context, MaterialPageRoute(builder: (_) => const PaywallScreen()));
+          return;
+        }
+        setState(() => _selectedTemplateIndex = index);
+      },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         margin: const EdgeInsets.only(right: 12),
@@ -434,14 +527,24 @@ class _GuestCardScreenState extends State<GuestCardScreen> {
                 color: isSelected 
                     ? Theme.of(context).colorScheme.primary 
                     : Theme.of(context).cardColor,
-                child: Text(
-                  labels[index],
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 9,
-                    fontWeight: FontWeight.bold,
-                    color: isSelected ? Colors.white : null,
-                  ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (isPremiumTemplate) 
+                      Padding(
+                        padding: const EdgeInsets.only(right: 2.0),
+                        child: Icon(FluentIcons.premium_24_filled, color: isSelected ? Colors.white : Colors.amber, size: 10),
+                      ),
+                    Text(
+                      labels[index],
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                        color: isSelected ? Colors.white : null,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],

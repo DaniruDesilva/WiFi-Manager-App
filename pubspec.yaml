@@ -69,6 +69,8 @@ dependencies:
   in_app_review: ^2.0.12
   flutter_native_splash: ^2.4.8
   dart_ping: ^9.0.1
+  google_mobile_ads: ^9.1.0
+  purchases_flutter: ^10.13.1
 dev_dependencies:
   flutter_test:
     sdk: flutter

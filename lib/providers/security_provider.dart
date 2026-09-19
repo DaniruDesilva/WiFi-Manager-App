@@ -64,8 +64,8 @@ class SecurityProvider with ChangeNotifier {
     try {
       final bool isSecure = await _securityChannel.invokeMethod('isDeviceSecure');
       _deviceHasSecurity = isSecure;
-    } on PlatformException catch (e) {
-      debugPrint("Failed to check device security: '${e.message}'. Falling back to local_auth.");
+    } catch (e) {
+      debugPrint("Failed to check device security: '$e'. Falling back to local_auth.");
       try {
         final canCheckBiometrics = await _localAuth.canCheckBiometrics;
         final isDeviceSupported = await _localAuth.isDeviceSupported();
