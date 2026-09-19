@@ -29,14 +29,17 @@ class DashboardScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                'Share Wi-Fi instantly',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                      fontWeight: FontWeight.w900,
-                      height: 1.1,
-                      color: Theme.of(context).textTheme.bodyLarge?.color,
-                    ),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  'Share Wi-Fi instantly',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                        fontWeight: FontWeight.w900,
+                        height: 1.1,
+                        color: Theme.of(context).textTheme.bodyLarge?.color,
+                      ),
+                ),
               ).animate().fade().slideY(begin: 0.2),
               
               const SizedBox(height: 8),

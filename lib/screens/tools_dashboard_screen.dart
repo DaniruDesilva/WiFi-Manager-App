@@ -25,12 +25,15 @@ class ToolsDashboardScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                'Network Tools',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                  fontWeight: FontWeight.w900,
-                  height: 1.1,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  'Network Tools',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    height: 1.1,
+                  ),
                 ),
               ).animate().fade().slideY(begin: 0.2),
               const SizedBox(height: 8),

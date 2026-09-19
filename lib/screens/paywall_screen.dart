@@ -35,10 +35,15 @@ class PaywallScreen extends StatelessWidget {
           SafeArea(
             child: Consumer<PremiumProvider>(
               builder: (context, premiumProvider, child) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const Spacer(),
+                return CustomScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  slivers: [
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const SizedBox(height: 24),
                     
                     // Crown Icon
                     const Icon(
@@ -117,7 +122,10 @@ class PaywallScreen extends StatelessWidget {
                       ),
                     const SizedBox(height: 24),
                   ],
-                );
+                ),
+              ),
+            ],
+          );
               },
             ),
           ),
