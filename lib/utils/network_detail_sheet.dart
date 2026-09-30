@@ -4,14 +4,12 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:path_provider/path_provider.dart';
-import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:gal/gal.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:screenshot/screenshot.dart';
 import '../models/wifi_network.dart';
-import 'constants.dart';
 import 'pdf_generator.dart';
 
 /// Shared bottom sheet for displaying network details.
@@ -296,15 +294,15 @@ Future<void> _saveQrCode(BuildContext context, WifiNetwork network, ScreenshotCo
             return Dialog(
               backgroundColor: Colors.black87,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+              child: const Padding(
+                padding: EdgeInsets.symmetric(vertical: 16, horizontal: 24),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(FluentIcons.checkmark_circle_24_regular, color: Colors.greenAccent),
-                    const SizedBox(width: 12),
-                    const Text('Saved to Gallery', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    Icon(FluentIcons.checkmark_circle_24_regular, color: Colors.greenAccent),
+                    SizedBox(width: 12),
+                    Text('Saved to Gallery', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                   ],
                 ),
               ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:share_plus/share_plus.dart';
 import '../providers/security_provider.dart';
 import '../widgets/pin_dialog.dart';
 
@@ -160,6 +161,75 @@ class SecuritySettingsScreen extends StatelessWidget {
                     onTap: () => _changePin(context, security, isApp: true),
                   ),
                 ],
+
+                const SizedBox(height: 32),
+
+                // ─── General Section ───
+                _buildSectionHeader(context, 'General', FluentIcons.settings_24_filled),
+                const SizedBox(height: 12),
+
+                // Share App Card
+                _buildTappableCard(
+                  context,
+                  icon: FluentIcons.share_24_regular,
+                  title: 'Share App',
+                  subtitle: 'Recommend NetVault to friends & family',
+                  onTap: () {
+                    Share.share(
+                      'Check out NetVault — the easiest way to share Wi-Fi with a QR code! 📶\n\nhttps://play.google.com/store/apps/details?id=com.netvault.app',
+                    );
+                  },
+                ),
+
+                const SizedBox(height: 12),
+
+                // Rate App Card
+                _buildTappableCard(
+                  context,
+                  icon: FluentIcons.star_24_regular,
+                  title: 'Rate Us',
+                  subtitle: 'Love NetVault? Leave us a review on Google Play',
+                  onTap: () {
+                    Share.share(
+                      'Rate NetVault on Google Play:\nhttps://play.google.com/store/apps/details?id=com.netvault.app',
+                    );
+                  },
+                ),
+
+                const SizedBox(height: 32),
+
+                // ─── About Section ───
+                Center(
+                  child: Column(
+                    children: [
+                      Text(
+                        'NetVault',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Version 1.0.3',
+                        style: TextStyle(
+                          color: Colors.grey.shade500,
+                          fontSize: 13,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Made with ❤️ by CreatorBox Studios',
+                        style: TextStyle(
+                          color: Colors.grey.shade500,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ).animate().fade(delay: 200.ms),
+
                 const SizedBox(height: 48),
               ],
             ),
@@ -322,6 +392,56 @@ class SecuritySettingsScreen extends StatelessWidget {
         style: OutlinedButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 14),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTappableCard(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 10,
+              spreadRadius: 1,
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(icon, color: Theme.of(context).colorScheme.primary, size: 22),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  const SizedBox(height: 4),
+                  Text(subtitle, style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
+                ],
+              ),
+            ),
+            Icon(FluentIcons.chevron_right_24_regular, color: Colors.grey.shade400, size: 20),
+          ],
         ),
       ),
     );

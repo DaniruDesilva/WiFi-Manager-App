@@ -6,10 +6,8 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../providers/history_provider.dart';
 import '../models/wifi_network.dart';
-import 'dart:convert';
 import 'guest_card_screen.dart';
 import 'generate_screen.dart';
-import '../utils/constants.dart';
 import '../utils/network_detail_sheet.dart';
 
 class DashboardScreen extends StatelessWidget {

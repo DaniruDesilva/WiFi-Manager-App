@@ -1,4 +1,4 @@
-package com.example.wifi_qr_generator
+package com.netvault.app
 
 import android.app.KeyguardManager
 import android.content.Context

@@ -9,7 +9,7 @@ class AdHelper {
   static bool _isAdLoaded = false;
   
   static final String _adUnitId = Platform.isAndroid
-      ? 'ca-app-pub-3940256099942544/1033173712' // Test Interstitial ID
+      ? 'ca-app-pub-5105772344719492/2673277632' // Production Interstitial ID
       : 'ca-app-pub-3940256099942544/4411468910'; // Test iOS ID
 
   /// Pre-loads an interstitial ad so it's ready when needed

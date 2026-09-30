@@ -16,7 +16,7 @@ class _NativeAdWidgetState extends State<NativeAdWidget> {
   bool _nativeAdIsLoaded = false;
 
   final String _adUnitId = Platform.isAndroid
-      ? 'ca-app-pub-3940256099942544/2247696110' // Test Native ID
+      ? 'ca-app-pub-5105772344719492/3785022635' // Production Native ID
       : 'ca-app-pub-3940256099942544/3986624511'; // Test iOS Native ID
 
   @override

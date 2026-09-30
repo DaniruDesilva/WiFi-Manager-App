@@ -5,7 +5,6 @@ import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:share_plus/share_plus.dart';
-import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:io';
 import 'package:gal/gal.dart';
@@ -14,7 +13,6 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import '../models/wifi_network.dart';
-import '../utils/pdf_generator.dart';
 import '../utils/ad_helper.dart';
 import '../providers/premium_provider.dart';
 import 'package:provider/provider.dart';
@@ -176,15 +174,15 @@ class _GuestCardScreenState extends State<GuestCardScreen> {
               return Dialog(
                 backgroundColor: Colors.black87,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 16, horizontal: 24),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(FluentIcons.checkmark_circle_24_regular, color: Colors.greenAccent),
-                      const SizedBox(width: 12),
-                      const Text('Saved to Gallery', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      Icon(FluentIcons.checkmark_circle_24_regular, color: Colors.greenAccent),
+                      SizedBox(width: 12),
+                      Text('Saved to Gallery', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                     ],
                   ),
                 ),
@@ -924,7 +922,7 @@ class _GuestCardScreenState extends State<GuestCardScreen> {
             Container(width: 120, height: 1.5, color: const Color(0xFF111111)),
             const SizedBox(height: 16),
             
-            Text('NETWORK', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 10, color: Color(0xFF111111), letterSpacing: 1)),
+            const Text('NETWORK', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 10, color: Color(0xFF111111), letterSpacing: 1)),
             const SizedBox(height: 4),
             Text(
               network.ssid,
@@ -935,7 +933,7 @@ class _GuestCardScreenState extends State<GuestCardScreen> {
             
             if (network.password.isNotEmpty) ...[
               const SizedBox(height: 12),
-              Text('PASSCODE', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 10, color: Color(0xFF111111), letterSpacing: 1)),
+              const Text('PASSCODE', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 10, color: Color(0xFF111111), letterSpacing: 1)),
               const SizedBox(height: 4),
               Text(
                 network.password,
@@ -1014,11 +1012,11 @@ class _GuestCardScreenState extends State<GuestCardScreen> {
                   ),
                   child: Column(
                     children: [
-                      Text('NETWORK', style: const TextStyle(color: Color(0xFF795548), fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 1)),
+                      const Text('NETWORK', style: TextStyle(color: Color(0xFF795548), fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 1)),
                       Text(network.ssid, style: const TextStyle(color: Color(0xFF4E342E), fontSize: 15, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis),
                       if (network.password.isNotEmpty) ...[
                         const SizedBox(height: 8),
-                        Text('PASSWORD', style: const TextStyle(color: Color(0xFF795548), fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 1)),
+                        const Text('PASSWORD', style: TextStyle(color: Color(0xFF795548), fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 1)),
                         Text(network.password, style: const TextStyle(color: Color(0xFF4E342E), fontSize: 15, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis),
                       ],
                     ],

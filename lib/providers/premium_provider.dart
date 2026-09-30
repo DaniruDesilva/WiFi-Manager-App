@@ -10,8 +10,8 @@ class PremiumProvider with ChangeNotifier {
   bool get isPremium => _isPremium;
   bool get isLoading => _isLoading;
 
-  // TODO: Replace with the actual RevenueCat Public API Key before release
-  static const String _revenueCatApiKeyAndroid = "goog_xxxxxxxxxxxxxxxxxxxxxxxxxxx";
+  // RevenueCat Public API Keys
+  static const String _revenueCatApiKeyAndroid = "goog_ihBuHjmKFNtuiVoOIMWiDKsHKiJ";
   static const String _revenueCatApiKeyIos = "appl_xxxxxxxxxxxxxxxxxxxxxxxxxxx";
 
   PremiumProvider() {

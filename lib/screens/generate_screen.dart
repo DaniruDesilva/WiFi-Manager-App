@@ -18,7 +18,6 @@ import 'package:nfc_manager/ndef_record.dart';
 import 'dart:convert';
 import '../providers/history_provider.dart';
 import '../models/wifi_network.dart';
-import '../utils/constants.dart';
 import '../utils/pdf_generator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:in_app_review/in_app_review.dart';
@@ -34,6 +33,7 @@ class _GenerateScreenState extends State<GenerateScreen> {
   final TextEditingController _ssidController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final ScreenshotController _screenshotController = ScreenshotController();
+  final ScrollController _scrollController = ScrollController();
 
   String _securityType = 'WPA';
   String? _category;
@@ -48,9 +48,21 @@ class _GenerateScreenState extends State<GenerateScreen> {
 
   @override
   void dispose() {
+    _scrollController.dispose();
     _ssidController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  void _clearFields() {
+    setState(() {
+      _ssidController.clear();
+      _passwordController.clear();
+      _category = null;
+      _securityType = 'WPA';
+      _isHidden = false;
+      _generatedNetwork = null;
+    });
   }
 
   void _generateQrCode() {
@@ -81,6 +93,16 @@ class _GenerateScreenState extends State<GenerateScreen> {
 
     Provider.of<HistoryProvider>(context, listen: false).addNetwork(network);
     FocusScope.of(context).unfocus();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 600),
+          curve: Curves.easeOutCubic,
+        );
+      }
+    });
 
     _checkAndRequestReview();
   }
@@ -203,15 +225,15 @@ class _GenerateScreenState extends State<GenerateScreen> {
               return Dialog(
                 backgroundColor: Colors.black87,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 16, horizontal: 24),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(FluentIcons.checkmark_circle_24_regular, color: Colors.greenAccent),
-                      const SizedBox(width: 12),
-                      const Text('Saved to Gallery', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      Icon(FluentIcons.checkmark_circle_24_regular, color: Colors.greenAccent),
+                      SizedBox(width: 12),
+                      Text('Saved to Gallery', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                     ],
                   ),
                 ),
@@ -398,6 +420,7 @@ class _GenerateScreenState extends State<GenerateScreen> {
         backgroundColor: Colors.transparent,
       ),
       body: SingleChildScrollView(
+        controller: _scrollController,
         padding: const EdgeInsets.all(24.0),
         child: Center(
           child: ConstrainedBox(
@@ -499,6 +522,16 @@ class _GenerateScreenState extends State<GenerateScreen> {
                           onChanged: (value) => setState(() => _isHidden = value),
                           activeThumbColor: Theme.of(context).colorScheme.primary,
                           contentPadding: EdgeInsets.zero,
+                        ),
+                        const SizedBox(height: 8),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton.icon(
+                            onPressed: _clearFields,
+                            icon: const Icon(FluentIcons.dismiss_24_regular, size: 18),
+                            label: const Text('Clear Fields'),
+                            style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
+                          ),
                         ),
                       ],
                     ),

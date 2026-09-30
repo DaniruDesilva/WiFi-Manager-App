@@ -194,7 +194,7 @@ class _HistoryScreenState extends State<HistoryScreen> with AutomaticKeepAliveCl
                   SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: Row(
-                      children: ['All', 'Home', 'Office', 'Guest'].map((filter) {
+                      children: ['All', 'Home', 'Work', 'Guest', 'Other'].map((filter) {
                         final isSelected = _selectedFilter == filter;
                         return Padding(
                           padding: const EdgeInsets.only(right: 8.0),

@@ -16,7 +16,7 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
   bool _isLoaded = false;
 
   final String _adUnitId = Platform.isAndroid
-      ? 'ca-app-pub-3940256099942544/6300978111' // Test Banner ID
+      ? 'ca-app-pub-5105772344719492/6612522643' // Production Banner ID
       : 'ca-app-pub-3940256099942544/2934735716'; // Test iOS ID
 
   @override
