@@ -29,9 +29,24 @@ class WifiWidgetProvider : HomeWidgetProvider() {
                     
                     val imgFile = File(imagePath)
                     if (imgFile.exists()) {
-                        val bitmap = BitmapFactory.decodeFile(imgFile.absolutePath)
-                        setImageViewBitmap(R.id.widget_qr_image, bitmap)
-                        setViewVisibility(R.id.widget_qr_image, View.VISIBLE)
+                        val options = BitmapFactory.Options().apply {
+                            inJustDecodeBounds = true
+                            BitmapFactory.decodeFile(imgFile.absolutePath, this)
+                            var sample = 1
+                            val targetDim = 512
+                            while ((outWidth / (sample * 2)) >= targetDim && (outHeight / (sample * 2)) >= targetDim) {
+                                sample *= 2
+                            }
+                            inSampleSize = sample
+                            inJustDecodeBounds = false
+                        }
+                        val bitmap = BitmapFactory.decodeFile(imgFile.absolutePath, options)
+                        if (bitmap != null) {
+                            setImageViewBitmap(R.id.widget_qr_image, bitmap)
+                            setViewVisibility(R.id.widget_qr_image, View.VISIBLE)
+                        } else {
+                            setViewVisibility(R.id.widget_qr_image, View.GONE)
+                        }
                     } else {
                         setViewVisibility(R.id.widget_qr_image, View.GONE)
                     }
