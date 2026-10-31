@@ -2,15 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
-import 'package:home_widget/home_widget.dart';
-import 'package:path_provider/path_provider.dart';
 import 'dart:io';
-import 'dart:ui' as ui;
+import 'package:path_provider/path_provider.dart';
 import 'package:gal/gal.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:screenshot/screenshot.dart';
 import '../models/wifi_network.dart';
 import 'pdf_generator.dart';
+import 'widget_helper.dart';
 
 /// Shared bottom sheet for displaying network details.
 /// Used by both DashboardScreen and HistoryScreen.
@@ -189,87 +188,21 @@ void showNetworkDetailsSheet(BuildContext context, WifiNetwork network) {
 }
 
 Future<void> _pinToHomeScreen(BuildContext context, WifiNetwork network) async {
-  try {
-    // Generate QR Image for the widget
-    final qrValidationResult = QrValidator.validate(
-      data: network.qrData,
-      version: QrVersions.auto,
-      errorCorrectionLevel: QrErrorCorrectLevel.L,
-    );
-    
-    if (qrValidationResult.status == QrValidationStatus.valid) {
-      final qrCode = qrValidationResult.qrCode;
-      final painter = QrPainter.withQr(
-        qr: qrCode!,
-        dataModuleStyle: QrDataModuleStyle(
-          dataModuleShape: QrDataModuleShape.square,
-          color: network.qrColorHex != null ? Color(int.parse(network.qrColorHex!, radix: 16)) : Colors.black,
-        ),
-        eyeStyle: QrEyeStyle(
-          eyeShape: QrEyeShape.square,
-          color: network.qrColorHex != null ? Color(int.parse(network.qrColorHex!, radix: 16)) : Colors.black,
-        ),
-        gapless: true,
-      );
-      
-      final tempDir = await getTemporaryDirectory();
-      final file = File('${tempDir.path}/widget_qr_${DateTime.now().millisecondsSinceEpoch}.png');
-      
-      final picData = await painter.toImageData(600, format: ui.ImageByteFormat.png);
-      if (picData != null) {
-        await file.writeAsBytes(picData.buffer.asUint8List());
-        await HomeWidget.saveWidgetData<String>('wifi_qr_image_path', file.path);
-      }
-    }
-
-    await HomeWidget.saveWidgetData<String>('wifi_ssid', network.ssid);
-    await HomeWidget.saveWidgetData<String>('wifi_password', network.password);
-    await HomeWidget.saveWidgetData<String>('wifi_qr_data', network.qrData);
-
-    // Use requestPinWidget to actually pin the widget to the home screen
-    await HomeWidget.requestPinWidget(
-      name: 'WifiWidgetProvider',
-      androidName: 'WifiWidgetProvider',
-    );
-
-    if (!context.mounted) return;
-    Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Widget pin requested! Check your home screen.'),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+  final success = await WidgetHelper.pinNetwork(network, requestPin: true);
+  if (!context.mounted) return;
+  Navigator.pop(context);
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(
+        success
+            ? 'Wi-Fi QR Code pinned to Home Screen widget! 📶'
+            : 'Could not pin widget. Please try again.',
       ),
-    );
-  } catch (e) {
-    if (!context.mounted) return;
-    // Fallback: try updateWidget for devices that don't support pinning
-    try {
-      await HomeWidget.updateWidget(
-        name: 'WifiWidgetProvider',
-        androidName: 'WifiWidgetProvider',
-      );
-      if (!context.mounted) return;
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Widget data updated. Add the widget manually from your home screen widget picker.'),
-          behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 4),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-      );
-    } catch (e2) {
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Could not pin widget: $e2'),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-      );
-    }
-  }
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      backgroundColor: success ? Colors.green : Colors.redAccent,
+    ),
+  );
 }
 
 Future<void> _saveQrCode(BuildContext context, WifiNetwork network, ScreenshotController screenshotController) async {

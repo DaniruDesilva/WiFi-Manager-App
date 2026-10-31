@@ -12,6 +12,8 @@ import 'tools_dashboard_screen.dart';
 import 'security_settings_screen.dart';
 import '../widgets/pin_dialog.dart';
 import '../utils/ad_helper.dart';
+import '../widgets/onboarding_sheet.dart';
+import 'user_guide_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -33,6 +35,7 @@ class _MainScreenState extends State<MainScreen> {
       if (mounted) {
         _tryUnlockApp();
         AdHelper.loadInterstitialAd(context);
+        OnboardingSheet.checkAndShow(context, onTabSelected: _onTabSelected);
       }
     });
   }
@@ -97,7 +100,20 @@ class _MainScreenState extends State<MainScreen> {
         title: const Text('NetVault', style: TextStyle(fontWeight: FontWeight.w600)),
         actions: [
           IconButton(
+            icon: const Icon(FluentIcons.book_question_mark_24_regular),
+            tooltip: 'User Guide & Help',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => UserGuideScreen(onTabSelected: _onTabSelected),
+                ),
+              );
+            },
+          ).animate().fade().scale(),
+          IconButton(
             icon: const Icon(FluentIcons.shield_24_regular),
+            tooltip: 'Security Settings',
             onPressed: () {
               Navigator.push(
                 context,
@@ -109,6 +125,7 @@ class _MainScreenState extends State<MainScreen> {
             icon: Icon(
               themeProvider.isDarkMode ? FluentIcons.weather_sunny_24_regular : FluentIcons.weather_moon_24_regular,
             ),
+            tooltip: 'Theme',
             onPressed: () {
               themeProvider.toggleTheme();
             },

@@ -3,8 +3,12 @@ import 'package:provider/provider.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../providers/security_provider.dart';
 import '../widgets/pin_dialog.dart';
+import '../utils/review_helper.dart';
+import 'user_guide_screen.dart';
+import '../widgets/onboarding_sheet.dart';
 
 class SecuritySettingsScreen extends StatelessWidget {
   const SecuritySettingsScreen({super.key});
@@ -168,6 +172,35 @@ class SecuritySettingsScreen extends StatelessWidget {
                 _buildSectionHeader(context, 'General', FluentIcons.settings_24_filled),
                 const SizedBox(height: 12),
 
+                // User Guide Card
+                _buildTappableCard(
+                  context,
+                  icon: FluentIcons.book_question_mark_24_regular,
+                  title: 'User Guide & Help',
+                  subtitle: 'Learn how to use QR codes, cards & tools',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const UserGuideScreen()),
+                    );
+                  },
+                ),
+
+                const SizedBox(height: 12),
+
+                // Welcome Tour Card
+                _buildTappableCard(
+                  context,
+                  icon: FluentIcons.info_24_regular,
+                  title: 'App Introduction Tour',
+                  subtitle: 'Replay the welcome tour and overview',
+                  onTap: () {
+                    OnboardingSheet.showTour(context);
+                  },
+                ),
+
+                const SizedBox(height: 12),
+
                 // Share App Card
                 _buildTappableCard(
                   context,
@@ -183,16 +216,14 @@ class SecuritySettingsScreen extends StatelessWidget {
 
                 const SizedBox(height: 12),
 
-                // Rate App Card
+                // Rate App Card (Triggers In-App Google Play Review dialog directly)
                 _buildTappableCard(
                   context,
                   icon: FluentIcons.star_24_regular,
                   title: 'Rate Us',
                   subtitle: 'Love NetVault? Leave us a review on Google Play',
                   onTap: () {
-                    Share.share(
-                      'Rate NetVault on Google Play:\nhttps://play.google.com/store/apps/details?id=com.netvault.app',
-                    );
+                    ReviewHelper.requestManualReview(context);
                   },
                 ),
 
@@ -211,12 +242,18 @@ class SecuritySettingsScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        'Version 1.0.3',
-                        style: TextStyle(
-                          color: Colors.grey.shade500,
-                          fontSize: 13,
-                        ),
+                      FutureBuilder<PackageInfo>(
+                        future: PackageInfo.fromPlatform(),
+                        builder: (context, snapshot) {
+                          final version = snapshot.hasData ? snapshot.data!.version : '1.0.5';
+                          return Text(
+                            'Version $version',
+                            style: TextStyle(
+                              color: Colors.grey.shade500,
+                              fontSize: 13,
+                            ),
+                          );
+                        },
                       ),
                       const SizedBox(height: 4),
                       Text(

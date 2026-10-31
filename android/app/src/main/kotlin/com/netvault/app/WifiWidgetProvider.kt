@@ -23,37 +23,42 @@ class WifiWidgetProvider : HomeWidgetProvider() {
                 val ssid = widgetData.getString("wifi_ssid", null)
                 val imagePath = widgetData.getString("wifi_qr_image_path", null)
 
-                if (ssid != null && imagePath != null) {
-                    setTextViewText(R.id.widget_title, "Wi-Fi Network")
-                    setTextViewText(R.id.widget_ssid, ssid)
-                    
+                var isDisplayed = false
+                if (!ssid.isNullOrEmpty() && !imagePath.isNullOrEmpty()) {
                     val imgFile = File(imagePath)
-                    if (imgFile.exists()) {
-                        val options = BitmapFactory.Options().apply {
-                            inJustDecodeBounds = true
-                            BitmapFactory.decodeFile(imgFile.absolutePath, this)
-                            var sample = 1
-                            val targetDim = 512
-                            while ((outWidth / (sample * 2)) >= targetDim && (outHeight / (sample * 2)) >= targetDim) {
-                                sample *= 2
+                    if (imgFile.exists() && imgFile.length() > 0) {
+                        try {
+                            val options = BitmapFactory.Options().apply {
+                                inJustDecodeBounds = true
+                                BitmapFactory.decodeFile(imgFile.absolutePath, this)
+                                var sample = 1
+                                val targetDim = 512
+                                while ((outWidth / (sample * 2)) >= targetDim && (outHeight / (sample * 2)) >= targetDim) {
+                                    sample *= 2
+                                }
+                                inSampleSize = sample
+                                inJustDecodeBounds = false
                             }
-                            inSampleSize = sample
-                            inJustDecodeBounds = false
+                            val bitmap = BitmapFactory.decodeFile(imgFile.absolutePath, options)
+                            if (bitmap != null) {
+                                setTextViewText(R.id.widget_title, "Wi-Fi Network")
+                                setTextViewText(R.id.widget_ssid, ssid)
+                                setImageViewBitmap(R.id.widget_qr_image, bitmap)
+                                setViewVisibility(R.id.widget_qr_image, View.VISIBLE)
+                                setViewVisibility(R.id.widget_empty_layout, View.GONE)
+                                isDisplayed = true
+                            }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
                         }
-                        val bitmap = BitmapFactory.decodeFile(imgFile.absolutePath, options)
-                        if (bitmap != null) {
-                            setImageViewBitmap(R.id.widget_qr_image, bitmap)
-                            setViewVisibility(R.id.widget_qr_image, View.VISIBLE)
-                        } else {
-                            setViewVisibility(R.id.widget_qr_image, View.GONE)
-                        }
-                    } else {
-                        setViewVisibility(R.id.widget_qr_image, View.GONE)
                     }
-                } else {
-                    setTextViewText(R.id.widget_title, "No Wi-Fi Pinned")
-                    setTextViewText(R.id.widget_ssid, "Pin a network from the app")
+                }
+
+                if (!isDisplayed) {
+                    setTextViewText(R.id.widget_title, "NetVault Wi-Fi")
+                    setTextViewText(R.id.widget_ssid, "No Wi-Fi Pinned Yet")
                     setViewVisibility(R.id.widget_qr_image, View.GONE)
+                    setViewVisibility(R.id.widget_empty_layout, View.VISIBLE)
                 }
 
                 // Add tap action to launch the app

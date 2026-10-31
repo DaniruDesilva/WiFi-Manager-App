@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/wifi_network.dart';
+import '../utils/widget_helper.dart';
 
 class HistoryProvider with ChangeNotifier {
   static const String _historyKey = 'wifi_history';
@@ -21,6 +22,7 @@ class HistoryProvider with ChangeNotifier {
       _history = decodedList.map((item) => WifiNetwork.fromJson(item)).toList();
       _history.sort((a, b) => b.timestamp.compareTo(a.timestamp)); // Newest first
       notifyListeners();
+      WidgetHelper.autoSyncLatestNetworkIfEmpty(_history);
     }
   }
 
@@ -30,6 +32,7 @@ class HistoryProvider with ChangeNotifier {
     _history.insert(0, network); // Add to the top
     await _saveHistory();
     notifyListeners();
+    WidgetHelper.autoSyncLatestNetworkIfEmpty(_history);
   }
 
   Future<void> removeNetwork(WifiNetwork network) async {

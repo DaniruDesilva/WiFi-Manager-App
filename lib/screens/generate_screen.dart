@@ -18,6 +18,7 @@ import 'package:nfc_manager/ndef_record.dart';
 import 'dart:convert';
 import '../providers/history_provider.dart';
 import '../models/wifi_network.dart';
+import '../utils/review_helper.dart';
 import '../utils/pdf_generator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:in_app_review/in_app_review.dart';
@@ -187,6 +188,7 @@ class _GenerateScreenState extends State<GenerateScreen> {
         await file.writeAsBytes(image);
         final xFile = XFile(path);
         await Share.shareXFiles([xFile], text: 'Connect to my Wi-Fi: ${_generatedNetwork!.ssid}');
+        ReviewHelper.checkAndTriggerSmartReview();
       }
     } catch (e) {
       if (mounted) {
@@ -240,6 +242,7 @@ class _GenerateScreenState extends State<GenerateScreen> {
               );
             },
           );
+          ReviewHelper.checkAndTriggerSmartReview();
         }
       }
     } catch (e) {

@@ -8,7 +8,9 @@ import '../providers/history_provider.dart';
 import '../models/wifi_network.dart';
 import 'guest_card_screen.dart';
 import 'generate_screen.dart';
+import 'user_guide_screen.dart';
 import '../utils/network_detail_sheet.dart';
+import '../utils/widget_helper.dart';
 
 class DashboardScreen extends StatelessWidget {
   final Function(int) onTabSelected;
@@ -254,6 +256,27 @@ class DashboardScreen extends StatelessWidget {
                     ],
                   ),
                 ),
+                IconButton(
+                  tooltip: 'Pin to Home Screen Widget',
+                  icon: Icon(FluentIcons.pin_24_regular, color: iconColor),
+                  onPressed: () async {
+                    final success = await WidgetHelper.pinNetwork(network, requestPin: true);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            success
+                                ? 'Wi-Fi QR Code pinned to Home Screen widget! 📶'
+                                : 'Could not pin widget',
+                          ),
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          backgroundColor: success ? Colors.green : Colors.redAccent,
+                        ),
+                      );
+                    }
+                  },
+                ),
               ],
             ),
           )
@@ -329,7 +352,18 @@ class DashboardScreen extends StatelessWidget {
             ),
             icon: const Icon(FluentIcons.add_24_filled),
             label: const Text('Create WiFi QR', style: TextStyle(fontWeight: FontWeight.bold)),
-          )
+          ),
+          const SizedBox(height: 12),
+          TextButton.icon(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => UserGuideScreen(onTabSelected: onTabSelected)),
+              );
+            },
+            icon: const Icon(FluentIcons.book_question_mark_24_regular, size: 18),
+            label: const Text('How to Use NetVault', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+          ),
         ],
       ),
     ),

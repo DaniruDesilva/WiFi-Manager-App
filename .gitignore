@@ -50,3 +50,6 @@ key.properties
 # Env files
 .env
 
+# Other projects / websites
+creator-box-studio-web/
+
